@@ -77,8 +77,8 @@ echo "[loop] ===== SANITY TEST RUN ====="
 
 # --- 3. reviewer phase (separate agent, read-only) ---------------------------
 echo "[loop] ===== REVIEWER (opencode subagent, read-only) ====="
-"$OPCODE" run --dir "${WT_PATH}" --agent reviewer --auto --title "review-fix-${MODE}" \
-  "Review the fix on branch ${BRANCH} against main in this worktree. Execute your full review procedure and finish with your verdict line." \
+"$OPCODE" run --dir "${WT_PATH}" --auto --title "review-fix-${MODE}" \
+  "@reviewer Review the fix on branch ${BRANCH} against main in this worktree. Execute your full review procedure and finish with your verdict line." \
   2>&1 | tee "${ROOT}/review-${MODE}.log" || true
 
 # --- 4. parse verdict (last occurrence = final message) ----------------------
