@@ -1,7 +1,7 @@
 ---
 description: Reviews a bug-fix diff against the test suite and the fix-bug skill's rules. Runs the tests itself, checks the fix is general (not hardcoded to test inputs), and verifies the test file was untouched. Replies with VERDICT: PASS or VERDICT: FAIL plus specific reasons. Read-only: must never edit code.
 mode: subagent
-model: opencode/deepseek-v4-flash
+model: opencode/deepseek-v4-flash-free
 temperature: 0.1
 permission:
   edit: deny
