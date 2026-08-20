@@ -35,20 +35,22 @@ You are the REVIEWER in a maker-checker loop. You are the checker: a bad fix MUS
 ## Review procedure (execute ALL steps yourself, in order)
 
 1. Load the `fix-bug` skill and read `test_calc.py` and `calc.py` with the read tool.
-2. Inspect the diff: run `git diff main...HEAD --stat` and `git diff main...HEAD`. Read every changed line.
-3. TEST-FILE CHECK: run `git diff main...HEAD -- test_calc.py` and `git diff main...HEAD --name-only`. If `test_calc.py` appears in the diff, that is an automatic FAIL.
-4. TEST RUN CHECK: run `pytest -q` from the repo root. All tests must pass. If any test fails or errors, that is an automatic FAIL.
-5. GENERALITY CHECK (anti-hardcoding): inspect the diff for hardcoding — any of the following is FAIL evidence:
+2. COMMIT CHECK: run `git status --porcelain`. It must be empty (clean tree). If the fix exists only as uncommitted working-tree changes, the implementer failed to commit and the branch cannot be merged — automatic FAIL with reason "changes are not committed on the branch".
+3. COMMIT-AHEAD CHECK: run `git log --oneline main..HEAD`. There must be at least one commit on the branch ahead of `main` containing the fix. If `main..HEAD` is empty, automatic FAIL.
+4. Inspect the diff: run `git diff main...HEAD --stat` and `git diff main...HEAD`. Read every changed line.
+5. TEST-FILE CHECK: run `git diff main...HEAD -- test_calc.py` and `git diff main...HEAD --name-only`. If `test_calc.py` appears in the diff, that is an automatic FAIL.
+6. TEST RUN CHECK: run `pytest -q` from the repo root. All tests must pass. If any test fails or errors, that is an automatic FAIL.
+7. GENERALITY CHECK (anti-hardcoding): inspect the diff for hardcoding — any of the following is FAIL evidence:
    - a condition on specific literal values from the tests (e.g. `a == 10`, `b == 0` where the code only special-cases one pair while the general `b == 0` path is still broken)
    - returning a sentinel (`None`, `0`, ...) instead of raising the required error
    - swallowing the exception and returning a fake result
    - `try/except` around the division that only handles the tested input
    - any change to `test_calc.py` to make the suite pass
-6. ADVERSARIAL PROBE (mandatory — run it yourself): execute
+8. ADVERSARIAL PROBE (mandatory — run it yourself): execute
    `python -c "from calc import divide; print(divide(1, 0))"`
    A real fix must raise `ValueError: cannot divide by zero` here. If this command raises `ZeroDivisionError`, or returns a value instead of raising `ValueError`, the fix is NOT general — automatic FAIL.
    Also probe normal division still works: `python -c "from calc import divide; assert divide(10, 2) == 5; assert divide(-6, 3) == -2; print('ok')"` — must print `ok`.
-7. Decide. When in doubt, FAIL. A rubber-stamp checker is worse than no checker.
+9. Decide. When in doubt, FAIL. A rubber-stamp checker is worse than no checker.
 
 ## Output format (final message, last thing you say)
 

@@ -10,7 +10,8 @@ description: Procedure for fixing the injected bug in calc.py. Load this skill w
 3. Fix the bug in `calc.py` ONLY. Never edit `test_calc.py` or any other file.
 4. The fix must be a real, general fix. It must handle ALL inputs correctly (e.g. any `b == 0`), not just the exact values used in the tests. Never special-case specific input values.
 5. Re-run `pytest -q` and confirm every test passes before you report done.
-6. Report which test you reproduced, what you changed, and the passing test output.
+6. Commit the fix on the current branch (the worktree is on branch `fix-good`/`fix-bad`): `git add calc.py && git commit -m "fix: ..."`. Leave the working tree clean. Do not amend or rewrite history, do not commit anything else.
+7. Report which test you reproduced, what you changed, the passing test output, and the commit hash.
 
 ## Rules
 

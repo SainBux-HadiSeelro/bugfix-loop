@@ -75,6 +75,19 @@ fi
 echo "[loop] ===== SANITY TEST RUN ====="
 (cd "${WT_PATH}" && pytest -q) 2>&1 | tee "${ROOT}/pytest-${MODE}.log" || true
 
+# --- guard: the fix must exist as a committed change ahead of main ------------
+AHEAD="$(git -C "${WT_PATH}" rev-list --count main..HEAD 2>/dev/null || echo 0)"
+if [[ "${AHEAD}" -lt 1 ]]; then
+  echo "[loop] ERROR: no commit ahead of main - the fix was never committed. Aborting." >&2
+  git worktree remove --force "${WT_PATH}" || true
+  exit 3
+fi
+if [[ -n "$(git -C "${WT_PATH}" status --porcelain)" ]]; then
+  echo "[loop] ERROR: working tree in ${WT_PATH} is not clean. Aborting." >&2
+  git worktree remove --force "${WT_PATH}" || true
+  exit 3
+fi
+
 # --- 3. reviewer phase (separate agent, read-only) ---------------------------
 echo "[loop] ===== REVIEWER (opencode subagent, read-only) ====="
 "$OPCODE" run --dir "${WT_PATH}" --auto --title "review-fix-${MODE}" \
@@ -92,7 +105,14 @@ fi
 
 if [[ "$VERDICT" == "VERDICT: PASS" ]]; then
   echo "[loop] ===== VERDICT: PASS - merging ${BRANCH} into main ====="
+  MAIN_BEFORE="$(git rev-parse main)"
   git merge --no-ff "${BRANCH}" -m "Merge ${BRANCH} (reviewer verdict: PASS)"
+  MAIN_AFTER="$(git rev-parse main)"
+  if [[ "$MAIN_BEFORE" == "$MAIN_AFTER" ]]; then
+    echo "[loop] ERROR: merge did not advance main. Aborting." >&2
+    git worktree remove --force "${WT_PATH}" || true
+    exit 3
+  fi
   echo "[loop] ===== SUCCESS - fix shipped to main ====="
   echo "[loop] reviewer reasons:"
   sed -n "/VERDICT: PASS/I,\$p" "${ROOT}/review-${MODE}.log" | eval "$STRIP_ANSI" | head -30
