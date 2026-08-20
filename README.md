@@ -51,8 +51,9 @@ Logs are written to `implementer-<mode>.log`, `pytest-<mode>.log`,
 ## Notes
 
 - Run from a clean checkout on `main`. After a successful `good` run, main
-  already contains the fix; to re-demo, reset to the injected-bug starting
-  point first: `git reset --hard buggy-start && git clean -fd`.
+  already contains the fix; to re-demo, reset to the demo starting point first:
+  `git reset --hard demo-ready && git clean -fd` (tag `demo-ready` = buggy code
+  plus all loop infrastructure; `buggy-start` is the bare injected-bug commit).
 - Worktrees live next to this repo as `../wt-bugfix-*` and are removed after
   each beat; branches `fix-good` / `fix-bad` are kept (the FAIL one is
   inspectable proof of the checker working).
