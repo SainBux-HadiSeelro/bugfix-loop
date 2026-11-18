@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bugfix Loop - Maker-Checker Live Dashboard</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .terminal-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .terminal-scroll::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .terminal-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    .terminal-scroll::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.05); }
+    }
+    .active-step-glow {
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="border-b border-slate-800 bg-slate-900/70 backdrop-blur sticky top-0 z-40 px-6 py-3.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold text-xl">
+          <i data-lucide="git-merge" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg text-white tracking-tight">Bugfix Loop</h1>
+            <span class="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full font-medium">Maker-Checker Engine</span>
+          </div>
+          <p class="text-xs text-slate-400">Live Agentic Observability & Diff Inspector</p>
+        </div>
+      </div>
+
+      <!-- SYSTEM INDICATORS -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300">
+          <i data-lucide="git-branch" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span>Branch:</span>
+          <span id="header-branch" class="font-mono font-medium text-white">main</span>
+        </div>
+
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
+          <span id="ws-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500 animate-pulse"></span>
+          <span id="ws-status" class="text-slate-300">Connected</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTROLS & ACTION BAR -->
+  <section class="max-w-7xl mx-auto w-full px-6 pt-6">
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Action Buttons -->
+      <div class="flex items-center flex-wrap gap-3">
+        <!-- RUN GOOD -->
+        <button id="btn-run-good" onclick="triggerRun('good')" class="flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-emerald-900/30 text-sm">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span>Run Good Fix Loop</span>
+          <span class="text-xs bg-emerald-700/60 px-1.5 py-0.5 rounded text-emerald-100">PASS</span>
+        </button>
+
+        <!-- RUN BAD -->
+        <button id="btn-run-bad" onclick="triggerRun('bad')" class="flex items-center gap-2.5 bg-amber-600 hover:bg-amber-500 active:scale-95 transition-all text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-amber-900/30 text-sm">
+          <i data-lucide="shield-alert" class="w-4 h-4"></i>
+          <span>Run Bad-Faith Loop</span>
+          <span class="text-xs bg-amber-700/60 px-1.5 py-0.5 rounded text-amber-100">FAIL</span>
+        </button>
+
+        <!-- RESET -->
+        <button id="btn-reset" onclick="triggerReset()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-slate-200 border border-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm">
+          <i data-lucide="rotate-ccw" class="w-4 h-4 text-indigo-400"></i>
+          <span>Reset to Buggy Code</span>
+        </button>
+      </div>
+
+      <!-- Current State Badge -->
+      <div class="flex items-center gap-3">
+        <div class="text-right">
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Engine State</div>
+          <div id="state-text" class="text-sm font-semibold text-slate-200">Idle</div>
+        </div>
+        <div id="verdict-banner" class="hidden px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIPELINE PROGRESS STEPPER -->
+  <section class="max-w-7xl mx-auto w-full px-6 pt-6">
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
+      <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+        <i data-lucide="layers" class="w-4 h-4 text-indigo-400"></i>
+        Maker-Checker Pipeline Stages
+      </h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        
+        <!-- Step 1: Worktree -->
+        <div id="step-worktree" class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 transition-all">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-slate-400">Step 1</span>
+            <div id="step-worktree-icon" class="text-slate-600">
+              <i data-lucide="circle" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-sm font-semibold text-white">Worktree & Branch</div>
+          <div class="text-xs text-slate-400 mt-1">Isolated git worktree</div>
+        </div>
+
+        <!-- Step 2: Implementer -->
+        <div id="step-implementer" class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 transition-all">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-slate-400">Step 2</span>
+            <div id="step-implementer-icon" class="text-slate-600">
+              <i data-lucide="circle" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-sm font-semibold text-white">Implementer Phase</div>
+          <div class="text-xs text-slate-400 mt-1">Opencode or hardcoded fix</div>
+        </div>
+
+        <!-- Step 3: Pytest -->
+        <div id="step-pytest" class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 transition-all">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-slate-400">Step 3</span>
+            <div id="step-pytest-icon" class="text-slate-600">
+              <i data-lucide="circle" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-sm font-semibold text-white">Sanity Pytest</div>
+          <div class="text-xs text-slate-400 mt-1">Verify test suite pass</div>
+        </div>
+
+        <!-- Step 4: Reviewer -->
+        <div id="step-reviewer" class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 transition-all">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-slate-400">Step 4</span>
+            <div id="step-reviewer-icon" class="text-slate-600">
+              <i data-lucide="circle" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-sm font-semibold text-white">Reviewer Checker</div>
+          <div class="text-xs text-slate-400 mt-1">Adversarial probe & rules</div>
+        </div>
+
+        <!-- Step 5: Decision / Merge -->
+        <div id="step-decision" class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 transition-all">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-slate-400">Step 5</span>
+            <div id="step-decision-icon" class="text-slate-600">
+              <i data-lucide="circle" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-sm font-semibold text-white">Merge or Reject</div>
+          <div class="text-xs text-slate-400 mt-1">Merge to main / retain branch</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN TWO-COLUMN SPLIT: CODE & DIFF VS TERMINAL -->
+  <main class="max-w-7xl mx-auto w-full px-6 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- LEFT COLUMN: CODE & DIFF (5 cols) -->
+    <div class="lg:col-span-5 flex flex-col gap-6">
+      
+      <!-- Current calc.py Code Card -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col">
+        <div class="bg-slate-800/60 px-4 py-3 border-b border-slate-700/60 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="file-code" class="w-4 h-4 text-indigo-400"></i>
+            <span class="text-xs font-semibold font-mono text-slate-200">calc.py (Active Source)</span>
+          </div>
+          <span id="code-status-tag" class="text-[11px] px-2 py-0.5 rounded-full font-medium">Checking...</span>
+        </div>
+        <div class="p-4 bg-slate-950 font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto min-h-[110px]">
+          <pre id="current-code">// Loading source...</pre>
+        </div>
+      </div>
+
+      <!-- Diff Viewer Card -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col flex-1">
+        <div class="bg-slate-800/60 px-4 py-3 border-b border-slate-700/60 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="git-pull-request" class="w-4 h-4 text-violet-400"></i>
+            <span class="text-xs font-semibold font-mono text-slate-200">Branch Diff (main..HEAD)</span>
+          </div>
+          <span id="diff-status" class="text-[11px] text-slate-400 font-mono">No active diff</span>
+        </div>
+        <div id="diff-container" class="p-4 bg-slate-950 font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto flex-1 max-h-[300px]">
+          <span class="text-slate-500 italic">No branch diff generated yet. Run a loop to see the implementer's change.</span>
+        </div>
+      </div>
+
+      <!-- Checker Adversarial Probe Card -->
+      <div class="bg-indigo-950/30 border border-indigo-900/50 rounded-2xl p-4 text-xs text-slate-300">
+        <div class="flex items-center gap-2 text-indigo-400 font-semibold mb-2">
+          <i data-lucide="microscope" class="w-4 h-4"></i>
+          <span>How Reviewer Detects Fake Fixes</span>
+        </div>
+        <p class="text-slate-400 leading-relaxed mb-2">
+          In <strong>Bad Mode</strong>, the fix only handles <code class="text-amber-300 bg-slate-900 px-1 py-0.5 rounded">a == 10 and b == 0</code>, passing exact unit tests.
+        </p>
+        <p class="text-slate-400 leading-relaxed">
+          The Checker runs an adversarial probe: <code class="text-indigo-300 bg-slate-900 px-1 py-0.5 rounded">divide(1, 0)</code>. If it crashes with raw <code class="text-red-400">ZeroDivisionError</code>, the checker catches the fake fix and refuses to merge!
+        </p>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: LIVE TERMINAL CONSOLE (7 cols) -->
+    <div class="lg:col-span-7 flex flex-col">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col flex-1 h-[680px]">
+        
+        <!-- Terminal Header -->
+        <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+            <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+            <span class="ml-2 font-mono text-xs text-slate-400 flex items-center gap-1.5">
+              <i data-lucide="terminal" class="w-3.5 h-3.5 text-slate-400"></i>
+              backend-live.log
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <!-- Autoscroll Toggle -->
+            <button id="btn-autoscroll" onclick="toggleAutoScroll()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 flex items-center gap-1">
+              <i data-lucide="arrow-down-circle" class="w-3 h-3"></i>
+              <span id="autoscroll-label">Auto-scroll: ON</span>
+            </button>
+            <!-- Clear Logs -->
+            <button onclick="clearTerminal()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1">
+              <i data-lucide="trash-2" class="w-3 h-3"></i>
+              <span>Clear</span>
+            </button>
+            <!-- Copy Logs -->
+            <button onclick="copyLogs()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1">
+              <i data-lucide="copy" class="w-3 h-3"></i>
+              <span>Copy</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Terminal Output -->
+        <div id="terminal" class="p-4 bg-slate-950 font-mono text-[12.5px] leading-relaxed text-slate-200 overflow-y-auto terminal-scroll flex-1 select-text">
+          <div class="text-slate-500 italic mb-2">[system] Connected to bugfix-loop backend. Ready to run.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    let ws = null;
+    let autoScroll = true;
+
+    function initIcons() {
+      lucide.createIcons();
+    }
+
+    // Connect WebSocket
+    function connectWS() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        document.getElementById('ws-indicator').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500 animate-pulse';
+        document.getElementById('ws-status').innerText = 'Connected';
+        appendTerminal('[ws] WebSocket connection established\n', 'text-indigo-400');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleEvent(data);
+        } catch (e) {
+          console.error('WS Parse Error', e);
+        }
+      };
+
+      ws.onclose = () => {
+        document.getElementById('ws-indicator').className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+        document.getElementById('ws-status').innerText = 'Disconnected';
+        appendTerminal('[ws] Disconnected. Reconnecting in 3s...\n', 'text-amber-400');
+        setTimeout(connectWS, 3000);
+      };
+    }
+
+    function handleEvent(data) {
+      if (data.type === 'log') {
+        let colorClass = 'text-slate-200';
+        if (data.stream === 'cmd') colorClass = 'text-indigo-400 font-semibold';
+        else if (data.stream === 'stderr') colorClass = 'text-rose-400';
+        else if (data.text.includes('PASS')) colorClass = 'text-emerald-400 font-bold';
+        else if (data.text.includes('FAIL')) colorClass = 'text-rose-400 font-bold';
+        else if (data.text.includes('=====')) colorClass = 'text-amber-300 font-semibold';
+
+        appendTerminal(data.text, colorClass);
+      } else if (data.type === 'phase') {
+        updatePhase(data);
+      } else if (data.type === 'diff') {
+        renderDiff(data.diff);
+      } else if (data.type === 'verdict_result') {
+        renderVerdict(data.verdict);
+      } else if (data.type === 'status_change' || data.type === 'init') {
+        updateRepoStatus(data.status || data);
+      } else if (data.type === 'loop_start') {
+        setRunningState(true, data.mode);
+        resetStages();
+      } else if (data.type === 'loop_end') {
+        setRunningState(false);
+      }
+    }
+
+    function appendTerminal(text, colorClass = 'text-slate-200') {
+      const term = document.getElementById('terminal');
+      const span = document.createElement('span');
+      span.className = colorClass;
+      span.innerText = text;
+      term.appendChild(span);
+
+      if (autoScroll) {
+        term.scrollTop = term.scrollHeight;
+      }
+    }
+
+    function clearTerminal() {
+      document.getElementById('terminal').innerHTML = '<div class="text-slate-500 italic mb-2">[system] Terminal cleared.</div>';
+    }
+
+    function copyLogs() {
+      const text = document.getElementById('terminal').innerText;
+      navigator.clipboard.writeText(text);
+      alert('Logs copied to clipboard!');
+    }
+
+    function toggleAutoScroll() {
+      autoScroll = !autoScroll;
+      document.getElementById('autoscroll-label').innerText = autoScroll ? 'Auto-scroll: ON' : 'Auto-scroll: OFF';
+    }
+
+    function setRunningState(running, mode = '') {
+      const goodBtn = document.getElementById('btn-run-good');
+      const badBtn = document.getElementById('btn-run-bad');
+      const resetBtn = document.getElementById('btn-reset');
+      const stateText = document.getElementById('state-text');
+
+      if (running) {
+        goodBtn.disabled = true;
+        badBtn.disabled = true;
+        resetBtn.disabled = true;
+        goodBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        badBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        resetBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        stateText.innerHTML = `<span class="text-indigo-400 flex items-center gap-1.5"><i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Running ${mode.toUpperCase()} Loop...</span>`;
+      } else {
+        goodBtn.disabled = false;
+        badBtn.disabled = false;
+        resetBtn.disabled = false;
+        goodBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        badBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        resetBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        stateText.innerText = 'Idle';
+      }
+      initIcons();
+    }
+
+    function updatePhase(data) {
+      const stepMap = {
+        'worktree': 'step-worktree',
+        'implementer': 'step-implementer',
+        'pytest': 'step-pytest',
+        'reviewer': 'step-reviewer',
+        'decision': 'step-decision'
+      };
+
+      const stepId = stepMap[data.phase];
+      if (!stepId) return;
+
+      const el = document.getElementById(stepId);
+      const iconEl = document.getElementById(`${stepId}-icon`);
+
+      if (data.status === 'running') {
+        el.className = 'bg-indigo-950/40 border-2 border-indigo-500 rounded-xl p-3.5 transition-all shadow-lg shadow-indigo-500/20 active-step-glow';
+        iconEl.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 text-indigo-400 animate-spin"></i>';
+      } else if (data.status === 'completed') {
+        el.className = 'bg-emerald-950/30 border border-emerald-500/50 rounded-xl p-3.5 transition-all';
+        iconEl.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>';
+      } else if (data.status === 'failed') {
+        el.className = 'bg-rose-950/30 border border-rose-500/50 rounded-xl p-3.5 transition-all';
+        iconEl.innerHTML = '<i data-lucide="x-circle" class="w-4 h-4 text-rose-400"></i>';
+      }
+      initIcons();
+    }
+
+    function resetStages() {
+      ['worktree', 'implementer', 'pytest', 'reviewer', 'decision'].forEach(stage => {
+        const el = document.getElementById(`step-${stage}`);
+        const iconEl = document.getElementById(`step-${stage}-icon`);
+        el.className = 'bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 transition-all';
+        iconEl.innerHTML = '<i data-lucide="circle" class="w-4 h-4 text-slate-600"></i>';
+      });
+      document.getElementById('verdict-banner').className = 'hidden';
+      document.getElementById('diff-container').innerHTML = '<span class="text-slate-500 italic">Running loop... waiting for diff...</span>';
+      initIcons();
+    }
+
+    function renderDiff(diffText) {
+      const container = document.getElementById('diff-container');
+      const status = document.getElementById('diff-status');
+
+      if (!diffText || diffText.trim() === '') {
+        container.innerHTML = '<span class="text-slate-500 italic">No diff found (source untouched or error).</span>';
+        status.innerText = '0 changes';
+        return;
+      }
+
+      status.innerText = 'Active changes';
+      const lines = diffText.split('\n');
+      let html = '';
+
+      lines.forEach(line => {
+        if (line.startsWith('+') && !line.startsWith('+++')) {
+          html += `<div class="bg-emerald-950/50 text-emerald-300 px-1 font-mono">${escapeHtml(line)}</div>`;
+        } else if (line.startsWith('-') && !line.startsWith('---')) {
+          html += `<div class="bg-rose-950/50 text-rose-300 px-1 font-mono">${escapeHtml(line)}</div>`;
+        } else if (line.startsWith('@@')) {
+          html += `<div class="text-indigo-400 font-semibold my-1">${escapeHtml(line)}</div>`;
+        } else {
+          html += `<div class="text-slate-400 font-mono">${escapeHtml(line)}</div>`;
+        }
+      });
+
+      container.innerHTML = html;
+    }
+
+    function renderVerdict(verdict) {
+      const banner = document.getElementById('verdict-banner');
+      banner.classList.remove('hidden');
+
+      if (verdict === 'PASS') {
+        banner.className = 'px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400';
+        banner.innerHTML = '<i data-lucide="check-check" class="w-4 h-4"></i> VERDICT: PASS (Merged)';
+      } else {
+        banner.className = 'px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 bg-rose-500/10 border border-rose-500/30 text-rose-400';
+        banner.innerHTML = '<i data-lucide="shield-x" class="w-4 h-4"></i> VERDICT: FAIL (Rejected)';
+      }
+      initIcons();
+    }
+
+    function updateRepoStatus(status) {
+      if (status.branch) {
+        document.getElementById('header-branch').innerText = status.branch;
+      }
+      if (status.calc_code !== undefined) {
+        document.getElementById('current-code').innerText = status.calc_code;
+        const tag = document.getElementById('code-status-tag');
+        if (status.has_bug) {
+          tag.className = 'text-[11px] px-2 py-0.5 rounded-full font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20';
+          tag.innerText = 'Bug Injected (Needs Fix)';
+        } else {
+          tag.className = 'text-[11px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+          tag.innerText = 'Fixed (ZeroDivision Handled)';
+        }
+      }
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    async function triggerRun(mode) {
+      try {
+        const res = await fetch(`/api/run/${mode}`, { method: 'POST' });
+        const data = await res.json();
+        if (res.status !== 200) {
+          alert(data.error || 'Failed to start run');
+        }
+      } catch (err) {
+        alert('Network error triggering run');
+      }
+    }
+
+    async function triggerReset() {
+      try {
+        const res = await fetch('/api/reset', { method: 'POST' });
+        const data = await res.json();
+        if (res.status !== 200) {
+          alert(data.error || 'Failed to reset');
+        }
+      } catch (err) {
+        alert('Network error triggering reset');
+      }
+    }
+
+    async function fetchInitialStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        updateRepoStatus(data);
+      } catch (e) {
+        console.error('Failed to fetch status', e);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initIcons();
+      fetchInitialStatus();
+      connectWS();
+    });
+  </script>
+</body>
+</html>

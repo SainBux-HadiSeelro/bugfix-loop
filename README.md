@@ -12,6 +12,8 @@ the work (PASS/FAIL) before anything ships. Local-only stand-in for PR review.
 | `.opencode/skills/fix-bug/SKILL.md` | The fix procedure: read tests first, fix source only, run tests, no hardcoding |
 | `.opencode/agents/reviewer.md` | The checker: a read-only subagent that runs the tests itself, probes for hardcoding, verifies the test file is untouched, and replies `VERDICT: PASS` / `VERDICT: FAIL` |
 | `run_bugfix_loop.sh` | One beat of the loop: worktree -> implementer -> reviewer -> merge-or-not |
+| `run_dashboard.py` | **Observability Dashboard**: Web UI with live streaming logs, pipeline stages, code diff, and action buttons |
+| `backend/` & `static/` | FastAPI backend and Tailwind/JS frontend for the visual dashboard |
 
 ## How it works
 
@@ -30,6 +32,20 @@ the work (PASS/FAIL) before anything ships. Local-only stand-in for PR review.
    and the reasons are printed. The worktree is removed either way.
 
 ## Run it
+
+### 1. Visual Web Dashboard (Recommended)
+
+Run the observability web dashboard to see real-time pipeline stages, streaming terminal logs, diff viewer, and interactive controls:
+
+```bash
+python run_dashboard.py
+```
+Open [http://localhost:8000](http://localhost:8000) in your browser. From the dashboard you can:
+- Click **Run Good Fix Loop** to watch the AI implementer fix the bug and pass review.
+- Click **Run Bad-Faith Loop** to watch the reviewer catch hardcoded/adversarial code.
+- Click **Reset to Buggy Code** to reset the demo state at any time.
+
+### 2. Terminal CLI
 
 ```bash
 ./run_bugfix_loop.sh good   # expect: PASS, merge to main
