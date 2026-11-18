@@ -3,6 +3,7 @@
 # 🤖 Autonomous Bugfix Loop
 ### **Agentic Maker-Checker Architecture for Self-Healing Software**
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-bugfix--loop.vercel.app-22c55e.svg?style=flat-square&logo=vercel)](https://bugfix-loop.vercel.app/)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg?style=flat-square&logo=python)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com)
 [![Architecture](https://img.shields.io/badge/Architecture-Maker--Checker%20Loop-6366f1.svg?style=flat-square)](specs/SPECIFICATION.md)
@@ -14,7 +15,7 @@
   <b>A loop-engineering system featuring an isolated Git worktree sandbox, specialized agent skills, and a strict Maker-Checker split where an independent read-only reviewer agent audits code with adversarial probes before merging to production.</b>
 </p>
 
-[System Specification](specs/SPECIFICATION.md) • [Adversarial Probe Spec](specs/ADVERSARIAL_PROBE_SPEC.md) • [Web Dashboard](#-visual-web-dashboard) • [CLI Quickstart](#-cli-quickstart)
+[🌐 **Live Demo**](https://bugfix-loop.vercel.app/) • [System Specification](specs/SPECIFICATION.md) • [Adversarial Probe Spec](specs/ADVERSARIAL_PROBE_SPEC.md) • [Web Dashboard](#1--visual-web-dashboard-recommended) • [CLI Quickstart](#2--terminal-cli-runner)
 
 </div>
 
@@ -80,6 +81,11 @@ Detailed protocol specifications can be reviewed in [specs/SPECIFICATION.md](spe
 ---
 
 ## 🚀 Quickstart
+
+> [!TIP]
+> **🌐 Try the Live Interactive Cloud Demo:**  
+> You can test the autonomous maker-checker loop immediately in your browser with zero installation:  
+> 👉 **[https://bugfix-loop.vercel.app/](https://bugfix-loop.vercel.app/)**
 
 ### 1. 🌟 Visual Web Dashboard (Recommended)
 
