@@ -70,6 +70,11 @@ if static_dir.exists() and static_dir.is_dir():
     app.mount("/static", StaticFiles(directory=str(static_dir), check_dir=False), name="static")
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/index", response_class=HTMLResponse)
+@app.get("/api", response_class=HTMLResponse)
+@app.get("/api/", response_class=HTMLResponse)
+@app.get("/api/index", response_class=HTMLResponse)
+@app.get("/api/index.py", response_class=HTMLResponse)
 async def get_index():
     candidates = [
         ROOT / "static" / "index.html",
@@ -83,10 +88,12 @@ async def get_index():
     return HTMLResponse("<h1>Bugfix Loop Dashboard</h1><p>Dashboard loaded in Serverless Mode.</p>", status_code=200)
 
 @app.get("/api/status")
+@app.get("/status")
 async def get_status():
     return JSONResponse(runner.get_repo_status())
 
 @app.post("/api/run/{mode}")
+@app.post("/run/{mode}")
 async def run_loop_endpoint(mode: str, background_tasks: BackgroundTasks):
     if mode not in ("good", "bad"):
         return JSONResponse({"error": "Mode must be 'good' or 'bad'"}, status_code=400)
@@ -102,6 +109,7 @@ async def run_loop_endpoint(mode: str, background_tasks: BackgroundTasks):
     return JSONResponse({"status": "started", "mode": mode})
 
 @app.post("/api/reset")
+@app.post("/reset")
 async def reset_endpoint(background_tasks: BackgroundTasks):
     if runner.is_running:
         return JSONResponse({"error": "Cannot reset while a loop is running"}, status_code=409)
@@ -114,6 +122,7 @@ async def reset_endpoint(background_tasks: BackgroundTasks):
     return JSONResponse({"status": "resetting"})
 
 @app.get("/api/logs")
+@app.get("/logs")
 async def get_existing_logs():
     logs = {}
     for log_path in ROOT.glob("*.log"):
@@ -122,6 +131,12 @@ async def get_existing_logs():
         except Exception:
             pass
     return JSONResponse(logs)
+
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+async def catch_all_get(full_path: str):
+    if full_path in ("api/status", "status", "api/logs", "logs"):
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    return await get_index()
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
