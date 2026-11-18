@@ -77,8 +77,11 @@ if static_dir.exists() and static_dir.is_dir():
 @app.get("/api/index.py", response_class=HTMLResponse)
 async def get_index():
     candidates = [
+        ROOT / "public" / "index.html",
         ROOT / "static" / "index.html",
+        Path(__file__).resolve().parent.parent / "public" / "index.html",
         Path(__file__).resolve().parent.parent / "static" / "index.html",
+        Path("public/index.html"),
         Path("static/index.html"),
         Path("./index.html"),
     ]
