@@ -30,8 +30,14 @@ loop_lock = threading.Lock()
 main_asyncio_loop: asyncio.AbstractEventLoop = None
 
 def broadcast_sync(payload: dict):
-    if main_asyncio_loop and active_connections:
-        asyncio.run_coroutine_threadsafe(broadcast_event(payload), main_asyncio_loop)
+    try:
+        loop = main_asyncio_loop
+        if not loop or loop.is_closed():
+            loop = asyncio.get_event_loop()
+        if loop and loop.is_running() and active_connections:
+            asyncio.run_coroutine_threadsafe(broadcast_event(payload), loop)
+    except Exception:
+        pass
 
 async def broadcast_event(payload: dict):
     msg = json.dumps(payload)
@@ -50,18 +56,31 @@ runner = BugfixLoopRunner(emit_callback=broadcast_sync)
 @app.on_event("startup")
 async def startup_event():
     global main_asyncio_loop
-    main_asyncio_loop = asyncio.get_running_loop()
+    try:
+        main_asyncio_loop = asyncio.get_running_loop()
+    except Exception:
+        pass
 
-# Mount static files
+# Mount static files safely if directory exists (avoids Vercel serverless import error)
 static_dir = ROOT / "static"
-app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+if not static_dir.exists():
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+
+if static_dir.exists() and static_dir.is_dir():
+    app.mount("/static", StaticFiles(directory=str(static_dir), check_dir=False), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index():
-    index_file = static_dir / "index.html"
-    if index_file.exists():
-        return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
-    return HTMLResponse("<h1>Dashboard index.html not found</h1>", status_code=404)
+    candidates = [
+        ROOT / "static" / "index.html",
+        Path(__file__).resolve().parent.parent / "static" / "index.html",
+        Path("static/index.html"),
+        Path("./index.html"),
+    ]
+    for path in candidates:
+        if path.exists():
+            return HTMLResponse(content=path.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>Bugfix Loop Dashboard</h1><p>Dashboard loaded in Serverless Mode.</p>", status_code=200)
 
 @app.get("/api/status")
 async def get_status():
