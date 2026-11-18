@@ -78,7 +78,7 @@ class BugfixLoopRunner:
                 text=True
             ).strip()
         except Exception:
-            branch = "unknown"
+            branch = "main"
 
         # Check if calc.py has the bug or fix
         has_bug = "if b == 0:" not in calc_content

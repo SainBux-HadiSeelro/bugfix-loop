@@ -300,34 +300,56 @@
       lucide.createIcons();
     }
 
+    let pollInterval = null;
+
+    function startPolling() {
+      if (!pollInterval) {
+        pollInterval = setInterval(fetchInitialStatus, 3000);
+      }
+    }
+
     // Connect WebSocket
     function connectWS() {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.host}/ws`;
       
-      ws = new WebSocket(wsUrl);
+      try {
+        ws = new WebSocket(wsUrl);
 
-      ws.onopen = () => {
-        document.getElementById('ws-indicator').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500 animate-pulse';
-        document.getElementById('ws-status').innerText = 'Connected';
-        appendTerminal('[ws] WebSocket connection established\n', 'text-indigo-400');
-      };
+        ws.onopen = () => {
+          document.getElementById('ws-indicator').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500 animate-pulse';
+          document.getElementById('ws-status').innerText = 'Connected';
+          appendTerminal('[ws] WebSocket connection established\n', 'text-indigo-400');
+          if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+          }
+        };
 
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          handleEvent(data);
-        } catch (e) {
-          console.error('WS Parse Error', e);
-        }
-      };
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            handleEvent(data);
+          } catch (e) {
+            console.error('WS Parse Error', e);
+          }
+        };
 
-      ws.onclose = () => {
-        document.getElementById('ws-indicator').className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
-        document.getElementById('ws-status').innerText = 'Disconnected';
-        appendTerminal('[ws] Disconnected. Reconnecting in 3s...\n', 'text-amber-400');
-        setTimeout(connectWS, 3000);
-      };
+        ws.onclose = () => {
+          document.getElementById('ws-indicator').className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+          document.getElementById('ws-status').innerText = 'HTTP Mode (Serverless)';
+          startPolling();
+          setTimeout(connectWS, 10000);
+        };
+
+        ws.onerror = () => {
+          document.getElementById('ws-indicator').className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+          document.getElementById('ws-status').innerText = 'HTTP Mode';
+          startPolling();
+        };
+      } catch (e) {
+        startPolling();
+      }
     }
 
     function handleEvent(data) {
