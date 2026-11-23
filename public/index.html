@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Autonomous Bugfix Loop • Agentic Maker-Checker Observability</title>
+  <title>Bugfix Loop · Maker-Checker Observability & Adversarial Visualizer</title>
+  
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -15,464 +17,1266 @@
         extend: {
           colors: {
             brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
               500: '#6366f1',
               600: '#4f46e5',
+              700: '#4338ca',
             }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Consolas', 'monospace']
           }
         }
       }
     }
   </script>
+
   <style>
-    .terminal-scroll::-webkit-scrollbar {
+    /* Custom scrollbars for terminal & code blocks */
+    .custom-scroll::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
-    .terminal-scroll::-webkit-scrollbar-track {
+    .custom-scroll::-webkit-scrollbar-track {
       background: #090d16;
     }
-    .terminal-scroll::-webkit-scrollbar-thumb {
+    .custom-scroll::-webkit-scrollbar-thumb {
       background: #1e293b;
-      border-radius: 3px;
+      border-radius: 4px;
     }
-    .terminal-scroll::-webkit-scrollbar-thumb:hover {
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
       background: #334155;
     }
-    @keyframes pulse-ring {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.05); opacity: 0.4; }
-      100% { transform: scale(0.95); opacity: 0.8; }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+      50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.8); }
     }
-    .pulse-ring-glow {
-      animation: pulse-ring 2.5s infinite ease-in-out;
+    .active-step-glow {
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+
+    @keyframes scanline {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(1000%); }
+    }
+    .scanline-effect {
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(99,102,241,0.3), transparent);
+      animation: scanline 8s linear infinite;
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
 
-  <!-- TOP APP HEADER -->
-  <header class="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-6 py-3.5">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+<body class="bg-[#070b14] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white antialiased">
+
+  <!-- ========================================================================= -->
+  <!-- TOP NAVIGATION HEADER                                                     -->
+  <!-- ========================================================================= -->
+  <header class="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
       
-      <!-- Logo & Title -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 text-white font-bold text-xl">
-          <i data-lucide="bot" class="w-5 h-5"></i>
+      <!-- Brand & Project Info -->
+      <div class="flex items-center gap-3.5 w-full sm:w-auto">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 text-white font-bold text-xl flex-shrink-0">
+          <i data-lucide="git-merge" class="w-5 h-5"></i>
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="font-bold text-lg text-white tracking-tight">Autonomous Bugfix Loop</h1>
-            <span class="text-xs bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-              <i data-lucide="shield-check" class="w-3 h-3 text-indigo-400"></i>
-              Maker-Checker Agentic Architecture
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="font-bold text-base sm:text-lg text-white tracking-tight">Bugfix Loop</h1>
+            <span class="text-[11px] bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
+              Maker-Checker Pattern
             </span>
           </div>
-          <p class="text-xs text-slate-400">Two Autonomous AI Agents Collaborating: One Writes Code, One Audits & Tests</p>
+          <p class="text-xs text-slate-400">Autonomous Git Worktrees · Adversarial AI Checker · Anti-Cheat Probes</p>
         </div>
       </div>
 
-      <!-- Environment & Live Status Badges -->
-      <div class="flex items-center gap-2.5">
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300">
+      <!-- Navigation Tabs & Indicators -->
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end w-full sm:w-auto">
+        
+        <!-- Environment Badge -->
+        <div id="env-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300">
+          <span id="env-dot" class="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400"></span>
+          <span id="env-text" class="font-mono text-[11px]">Vercel Ready ⚡</span>
+        </div>
+
+        <!-- Git Branch -->
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300">
           <i data-lucide="git-branch" class="w-3.5 h-3.5 text-indigo-400"></i>
-          <span class="text-slate-400">Target:</span>
-          <span id="header-branch" class="font-mono font-medium text-white">main</span>
+          <span class="text-slate-400">branch:</span>
+          <span id="header-branch" class="font-mono font-medium text-emerald-400">main</span>
         </div>
 
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
-          <span id="ws-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500 animate-pulse"></span>
-          <span id="ws-status" class="text-slate-300 font-medium">Ready</span>
-        </div>
+        <!-- GitHub / Docs Link -->
+        <a href="#tab-architecture" onclick="switchTab('architecture')" class="px-3 py-1.5 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-xs font-medium flex items-center gap-1.5 transition-all">
+          <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+          <span>How It Works</span>
+        </a>
       </div>
-
     </div>
   </header>
 
-  <!-- NON-TECHNICAL HERO EXPLAINER (The 10-Second Concept) -->
-  <section class="max-w-7xl mx-auto w-full px-6 pt-6">
-    <div class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-900/40 rounded-2xl p-5 shadow-xl">
-      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
-        
-        <!-- Step 1: The Bug -->
-        <div class="flex items-start gap-3.5 flex-1">
-          <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
-            <i data-lucide="bug" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <div class="text-xs uppercase tracking-wider font-bold text-rose-400">1. The Injected Bug</div>
-            <div class="text-sm font-semibold text-white mt-0.5">Divide by Zero Crash</div>
-            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-              Calculator crashes with <code class="text-rose-300 font-mono">ZeroDivisionError</code> when dividing by 0 instead of giving a polite error message.
-            </p>
-          </div>
-        </div>
+  <!-- ========================================================================= -->
+  <!-- SUB-NAV / TABS BAR                                                        -->
+  <!-- ========================================================================= -->
+  <nav class="border-b border-slate-800/60 bg-slate-900/40 px-4 sm:px-6 py-2">
+    <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto custom-scroll text-xs">
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-sm shadow-indigo-600/20">
+        <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+        <span>Live Maker-Checker Loop</span>
+      </button>
 
-        <div class="hidden md:block text-slate-600">
-          <i data-lucide="arrow-right" class="w-5 h-5"></i>
-        </div>
+      <button onclick="switchTab('sandbox')" id="nav-sandbox" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+        <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span>Adversarial Probe Sandbox</span>
+        <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">Interactive</span>
+      </button>
 
-        <!-- Step 2: Maker Agent -->
-        <div class="flex items-start gap-3.5 flex-1">
-          <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
-            <i data-lucide="cpu" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <div class="text-xs uppercase tracking-wider font-bold text-indigo-400">2. Agent 1: The Maker</div>
-            <div class="text-sm font-semibold text-white mt-0.5">Autonomous Code Fixer</div>
-            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-              Operates in an isolated sandbox. Reads unit tests, formulates a strategy, and edits <code class="text-indigo-300 font-mono">calc.py</code> to fix the bug.
-            </p>
-          </div>
-        </div>
+      <button onclick="switchTab('architecture')" id="nav-architecture" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+        <i data-lucide="network" class="w-3.5 h-3.5 text-indigo-400"></i>
+        <span>Behind-the-Scenes Architecture</span>
+      </button>
 
-        <div class="hidden md:block text-slate-600">
-          <i data-lucide="arrow-right" class="w-5 h-5"></i>
-        </div>
+      <button onclick="switchTab('prompts')" id="nav-prompts" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+        <i data-lucide="terminal-square" class="w-3.5 h-3.5 text-purple-400"></i>
+        <span>Agent Prompts & Skills</span>
+      </button>
 
-        <!-- Step 3: Checker Agent -->
-        <div class="flex items-start gap-3.5 flex-1">
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-            <i data-lucide="shield-alert" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <div class="text-xs uppercase tracking-wider font-bold text-emerald-400">3. Agent 2: The Checker</div>
-            <div class="text-sm font-semibold text-white mt-0.5">Read-Only Adversarial Auditor</div>
-            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-              Zero edit permission. Probes with surprise inputs to verify the AI didn't cheat or write fake hardcoded code before merging to main!
-            </p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- INTERACTIVE PLAYGROUND (Choose a Scenario) -->
-  <section class="max-w-7xl mx-auto w-full px-6 pt-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-      
-      <!-- SCENARIO 1: HONEST FIX -->
-      <div class="bg-slate-900/90 border border-emerald-900/40 hover:border-emerald-500/50 transition-all rounded-2xl p-5 shadow-xl flex flex-col justify-between group">
-        <div>
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-              <h3 class="text-base font-bold text-white">Scenario 1: Honest AI Agent</h3>
-            </div>
-            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              Expected: PASS & MERGED
-            </span>
-          </div>
-          <p class="text-xs text-slate-400 leading-relaxed mb-4">
-            The AI Implementer analyzes the code and writes a <strong class="text-emerald-300">universal fix</strong> (<code class="font-mono text-emerald-200">if b == 0: raise ValueError</code>). The Reviewer Agent audits the code with multiple test cases, confirms it is genuine, and automatically merges it into main.
-          </p>
-        </div>
-
-        <button id="btn-run-good" onclick="triggerRun('good')" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98] transition-all text-white py-3 rounded-xl font-semibold shadow-lg shadow-emerald-900/30 text-sm">
-          <i data-lucide="play-circle" class="w-4 h-4"></i>
-          <span>Run Honest AI Fix Loop</span>
-        </button>
-      </div>
-
-      <!-- SCENARIO 2: CHEATING / SNEAKY FIX -->
-      <div class="bg-slate-900/90 border border-amber-900/40 hover:border-amber-500/50 transition-all rounded-2xl p-5 shadow-xl flex flex-col justify-between group">
-        <div>
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block animate-pulse"></span>
-              <h3 class="text-base font-bold text-white">Scenario 2: Cheating AI Agent</h3>
-            </div>
-            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              Expected: CAUGHT & REJECTED
-            </span>
-          </div>
-          <p class="text-xs text-slate-400 leading-relaxed mb-4">
-            A lazy AI injects a <strong class="text-amber-300">fake shortcut fix</strong> that only handles <code class="font-mono text-amber-200">a == 10 and b == 0</code> to trick the unit tests. The Reviewer Agent runs an adversarial probe (<code class="font-mono text-amber-200">divide(1, 0)</code>), catches the cheating code, and strictly refuses to merge!
-          </p>
-        </div>
-
-        <button id="btn-run-bad" onclick="triggerRun('bad')" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 active:scale-[0.98] transition-all text-white py-3 rounded-xl font-semibold shadow-lg shadow-amber-900/30 text-sm">
-          <i data-lucide="alert-triangle" class="w-4 h-4"></i>
-          <span>Test Sneaky AI (Watch Reviewer Catch It)</span>
-        </button>
-      </div>
-
-    </div>
-
-    <!-- Quick Reset Button Bar -->
-    <div class="mt-4 flex items-center justify-between bg-slate-900/60 border border-slate-800 rounded-xl px-5 py-3">
-      <div class="text-xs text-slate-400 flex items-center gap-2">
-        <i data-lucide="info" class="w-4 h-4 text-indigo-400"></i>
-        <span>Want to restart the demo from scratch? Reset puts the unhandled bug back into <code class="text-slate-300">calc.py</code>.</span>
-      </div>
-      <button id="btn-reset" onclick="triggerReset()" class="flex items-center gap-2 text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all active:scale-95">
-        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-indigo-400"></i>
-        <span>Reset to Buggy Code</span>
+      <button onclick="switchTab('diff-compare')" id="nav-diff-compare" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+        <i data-lucide="split" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <span>Good vs Bad Fix Forensic Diff</span>
       </button>
     </div>
-  </section>
+  </nav>
 
-  <!-- VISUAL PIPELINE PROGRESS STEPPER -->
-  <section class="max-w-7xl mx-auto w-full px-6 pt-6">
-    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-          <i data-lucide="git-merge" class="w-4 h-4 text-indigo-400"></i>
-          Autonomous Pipeline Stages
-        </h2>
-        <div id="engine-status-tag" class="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-          <span>Status:</span> <span id="state-text" class="text-slate-200 font-semibold">Idle</span>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        
-        <!-- Step 1: Worktree Sandbox -->
-        <div id="step-worktree" class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 transition-all">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-bold text-slate-500 uppercase">Step 1</span>
-            <div id="step-worktree-icon" class="text-slate-600">
-              <i data-lucide="circle" class="w-4 h-4"></i>
-            </div>
-          </div>
-          <div class="text-sm font-semibold text-white">Isolated Sandbox</div>
-          <div class="text-xs text-slate-400 mt-1">Git worktree created to isolate fixes</div>
-        </div>
-
-        <!-- Step 2: Maker Agent -->
-        <div id="step-implementer" class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 transition-all">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-bold text-slate-500 uppercase">Step 2</span>
-            <div id="step-implementer-icon" class="text-slate-600">
-              <i data-lucide="circle" class="w-4 h-4"></i>
-            </div>
-          </div>
-          <div class="text-sm font-semibold text-white">AI Maker (Coder)</div>
-          <div class="text-xs text-slate-400 mt-1">Reads tests & writes fix in calc.py</div>
-        </div>
-
-        <!-- Step 3: Sanity Unit Tests -->
-        <div id="step-pytest" class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 transition-all">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-bold text-slate-500 uppercase">Step 3</span>
-            <div id="step-pytest-icon" class="text-slate-600">
-              <i data-lucide="circle" class="w-4 h-4"></i>
-            </div>
-          </div>
-          <div class="text-sm font-semibold text-white">Sanity Unit Tests</div>
-          <div class="text-xs text-slate-400 mt-1">Runs pytest test_calc.py suite</div>
-        </div>
-
-        <!-- Step 4: Checker Agent Probe -->
-        <div id="step-reviewer" class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 transition-all">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-bold text-slate-500 uppercase">Step 4</span>
-            <div id="step-reviewer-icon" class="text-slate-600">
-              <i data-lucide="circle" class="w-4 h-4"></i>
-            </div>
-          </div>
-          <div class="text-sm font-semibold text-white">AI Checker (Auditor)</div>
-          <div class="text-xs text-slate-400 mt-1">Runs adversarial probes & anti-cheat</div>
-        </div>
-
-        <!-- Step 5: Merge Decision -->
-        <div id="step-decision" class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 transition-all">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-bold text-slate-500 uppercase">Step 5</span>
-            <div id="step-decision-icon" class="text-slate-600">
-              <i data-lucide="circle" class="w-4 h-4"></i>
-            </div>
-          </div>
-          <div class="text-sm font-semibold text-white">Merge or Block</div>
-          <div class="text-xs text-slate-400 mt-1">PASS merges to main; FAIL is kept</div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- MAIN TWO-COLUMN SPLIT: CODE & AGENTS VS LIVE CONSOLE -->
-  <main class="max-w-7xl mx-auto w-full px-6 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <!-- ========================================================================= -->
+  <!-- TAB 1: LIVE MAKER-CHECKER DASHBOARD                                       -->
+  <!-- ========================================================================= -->
+  <section id="tab-dashboard" class="tab-content flex-1 flex flex-col">
     
-    <!-- LEFT COLUMN: AGENTS & CODE INSPECTOR (5 cols) -->
-    <div class="lg:col-span-5 flex flex-col gap-6">
+    <!-- CONTROL PANEL & RUNNERS -->
+    <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 pt-5">
+      <div class="bg-gradient-to-r from-slate-900/95 via-slate-900/90 to-slate-900/95 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl relative overflow-hidden">
+        
+        <div class="scanline-effect pointer-events-none"></div>
+
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
+          
+          <!-- Loop Trigger Buttons -->
+          <div class="flex items-center flex-wrap gap-2.5 sm:gap-3">
+            
+            <!-- RUN GOOD LOOP -->
+            <button id="btn-run-good" onclick="startLoop('good')" class="group flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-emerald-900/30 text-sm">
+              <i data-lucide="sparkles" class="w-4 h-4 text-emerald-200 group-hover:rotate-12 transition-transform"></i>
+              <span>Run Good Fix Loop</span>
+              <span class="text-xs bg-emerald-700/70 border border-emerald-400/30 px-2 py-0.5 rounded-md font-mono text-emerald-100 font-semibold">PASS</span>
+            </button>
+
+            <!-- RUN BAD-FAITH LOOP -->
+            <button id="btn-run-bad" onclick="startLoop('bad')" class="group flex items-center gap-2.5 bg-amber-600 hover:bg-amber-500 active:scale-95 transition-all text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-amber-900/30 text-sm">
+              <i data-lucide="shield-alert" class="w-4 h-4 text-amber-200 group-hover:shake transition-transform"></i>
+              <span>Run Bad-Faith Loop</span>
+              <span class="text-xs bg-amber-700/70 border border-amber-400/30 px-2 py-0.5 rounded-md font-mono text-amber-100 font-semibold">FAIL</span>
+            </button>
+
+            <!-- RESET TO BUGGY CODE -->
+            <button id="btn-reset" onclick="resetToBuggy()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-slate-200 border border-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm">
+              <i data-lucide="rotate-ccw" class="w-4 h-4 text-indigo-400"></i>
+              <span>Reset to Injected Bug</span>
+            </button>
+          </div>
+
+          <!-- Walkthrough Step Controls & Speed -->
+          <div class="flex items-center flex-wrap gap-2 bg-slate-950/70 border border-slate-800 px-3 py-1.5 rounded-xl">
+            <span class="text-[11px] text-slate-400 font-medium mr-1 flex items-center gap-1">
+              <i data-lucide="gauge" class="w-3 h-3 text-indigo-400"></i> Speed:
+            </span>
+            <button onclick="setSpeed(1)" id="speed-1x" class="speed-btn px-2 py-0.5 rounded text-xs font-mono bg-indigo-600 text-white font-semibold">1x</button>
+            <button onclick="setSpeed(2)" id="speed-2x" class="speed-btn px-2 py-0.5 rounded text-xs font-mono text-slate-400 hover:text-white">2x</button>
+            <button onclick="setSpeed(5)" id="speed-5x" class="speed-btn px-2 py-0.5 rounded text-xs font-mono text-slate-400 hover:text-white">Instant</button>
+            
+            <div class="h-4 w-px bg-slate-800 mx-1"></div>
+
+            <button id="btn-pause-play" onclick="togglePause()" class="px-2 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white text-xs flex items-center gap-1">
+              <i id="pause-icon" data-lucide="pause" class="w-3 h-3 text-amber-400"></i>
+              <span id="pause-text">Pause</span>
+            </button>
+          </div>
+
+          <!-- Live State & Verdict Banner -->
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Loop State</div>
+              <div id="state-text" class="text-xs font-semibold text-slate-200 flex items-center gap-1.5 justify-end">
+                <span class="w-2 h-2 rounded-full bg-slate-500"></span> Idle
+              </div>
+            </div>
+
+            <!-- Dynamic Verdict Result -->
+            <div id="verdict-banner" class="hidden px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 border">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- PIPELINE STAGE STEPPER -->
+    <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 pt-4">
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 sm:p-5">
+        <div class="flex items-center justify-between mb-3.5">
+          <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+            <i data-lucide="layers" class="w-4 h-4 text-indigo-400"></i>
+            Maker-Checker Pipeline Progression
+          </h2>
+          <span class="text-[11px] text-slate-500 font-mono" id="stage-detail-info">Ready to start</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          
+          <!-- Step 1: Worktree -->
+          <div id="step-worktree" class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-semibold text-indigo-400 font-mono">01. ISOLATION</span>
+              <div id="step-worktree-icon" class="text-slate-600">
+                <i data-lucide="circle" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-xs font-bold text-white">Git Worktree</div>
+            <div class="text-[11px] text-slate-400 mt-0.5 leading-snug">Isolated workspace outside main</div>
+          </div>
+
+          <!-- Step 2: Implementer -->
+          <div id="step-implementer" class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-semibold text-indigo-400 font-mono">02. MAKER</span>
+              <div id="step-implementer-icon" class="text-slate-600">
+                <i data-lucide="circle" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-xs font-bold text-white">Implementer AI</div>
+            <div class="text-[11px] text-slate-400 mt-0.5 leading-snug">Opencode or Hardcoded fix</div>
+          </div>
+
+          <!-- Step 3: Pytest -->
+          <div id="step-pytest" class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-semibold text-indigo-400 font-mono">03. TEST SUITE</span>
+              <div id="step-pytest-icon" class="text-slate-600">
+                <i data-lucide="circle" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-xs font-bold text-white">Sanity Pytest</div>
+            <div class="text-[11px] text-slate-400 mt-0.5 leading-snug">Unit tests pass (both modes!)</div>
+          </div>
+
+          <!-- Step 4: Reviewer -->
+          <div id="step-reviewer" class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-semibold text-indigo-400 font-mono">04. CHECKER</span>
+              <div id="step-reviewer-icon" class="text-slate-600">
+                <i data-lucide="circle" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-xs font-bold text-white">Reviewer Subagent</div>
+            <div class="text-[11px] text-slate-400 mt-0.5 leading-snug">Adversarial probe & AST audit</div>
+          </div>
+
+          <!-- Step 5: Decision / Merge -->
+          <div id="step-decision" class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-semibold text-indigo-400 font-mono">05. VERDICT</span>
+              <div id="step-decision-icon" class="text-slate-600">
+                <i data-lucide="circle" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-xs font-bold text-white">Merge or Reject</div>
+            <div class="text-[11px] text-slate-400 mt-0.5 leading-snug">Merge to main / retain branch</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN TWO-COLUMN SPLIT: CODE & DIFF VS TERMINAL -->
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 py-4 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
       
-      <!-- Current Code & Status Card -->
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col">
-        <div class="bg-slate-800/60 px-4 py-3 border-b border-slate-700/60 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i data-lucide="file-code" class="w-4 h-4 text-indigo-400"></i>
-            <span class="text-xs font-semibold font-mono text-slate-200">calc.py (Active Source)</span>
+      <!-- LEFT COLUMN: CODE & DIFF (5 cols) -->
+      <div class="lg:col-span-5 flex flex-col gap-4">
+        
+        <!-- Active Source Code Card (calc.py) -->
+        <div class="bg-slate-900/85 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col">
+          <div class="bg-slate-800/70 px-4 py-2.5 border-b border-slate-700/60 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="file-code" class="w-4 h-4 text-indigo-400"></i>
+              <span class="text-xs font-semibold font-mono text-slate-200">calc.py (Active Source)</span>
+            </div>
+            <span id="code-status-tag" class="text-[10px] px-2 py-0.5 rounded-full font-medium">Checking...</span>
           </div>
-          <span id="code-status-tag" class="text-[11px] px-2.5 py-0.5 rounded-full font-medium">Checking...</span>
-        </div>
-        <div class="p-4 bg-slate-950 font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto min-h-[95px]">
-          <pre id="current-code">// Loading source code...</pre>
-        </div>
-      </div>
-
-      <!-- Real-Time Code Diff Viewer -->
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col flex-1">
-        <div class="bg-slate-800/60 px-4 py-3 border-b border-slate-700/60 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i data-lucide="git-pull-request" class="w-4 h-4 text-violet-400"></i>
-            <span class="text-xs font-semibold font-mono text-slate-200">Agent Fix Diff (main..HEAD)</span>
+          <div class="p-3.5 bg-slate-950 font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto min-h-[90px] border-b border-slate-800/40">
+            <pre id="current-code">// Loading source...</pre>
           </div>
-          <span id="diff-status" class="text-[11px] text-slate-400 font-mono">No active diff</span>
+          <div id="code-explanation" class="p-3 bg-slate-900/40 text-[11px] text-slate-400 leading-normal flex items-start gap-2">
+            <i data-lucide="info" class="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5"></i>
+            <span id="code-explanation-text">Starting state: Initial buggy code crashes on division by zero instead of raising ValueError.</span>
+          </div>
         </div>
-        <div id="diff-container" class="p-4 bg-slate-950 font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto flex-1 max-h-[260px]">
-          <span class="text-slate-500 italic">Click one of the scenario buttons above to see the AI agent's code change here.</span>
+
+        <!-- Diff Viewer Card -->
+        <div class="bg-slate-900/85 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col flex-1">
+          <div class="bg-slate-800/70 px-4 py-2.5 border-b border-slate-700/60 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="git-pull-request" class="w-4 h-4 text-violet-400"></i>
+              <span class="text-xs font-semibold font-mono text-slate-200">Branch Diff (main..HEAD)</span>
+            </div>
+            <span id="diff-status" class="text-[10px] text-slate-400 font-mono bg-slate-950 px-2 py-0.5 rounded border border-slate-800">No active diff</span>
+          </div>
+          <div id="diff-container" class="p-3.5 bg-slate-950 font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto flex-1 min-h-[140px] max-h-[220px] custom-scroll">
+            <span class="text-slate-500 italic">No branch diff generated yet. Run a loop to see the implementer's change.</span>
+          </div>
+        </div>
+
+        <!-- Checker Adversarial Probe Card -->
+        <div class="bg-gradient-to-br from-indigo-950/40 to-slate-900/90 border border-indigo-900/60 rounded-2xl p-4 text-xs text-slate-300 shadow-md">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2 text-indigo-300 font-semibold">
+              <i data-lucide="microscope" class="w-4 h-4 text-indigo-400"></i>
+              <span>How Reviewer Catches Bad-Faith Fixes</span>
+            </div>
+            <button onclick="switchTab('sandbox')" class="text-[11px] text-indigo-400 hover:text-indigo-300 underline flex items-center gap-1 font-mono">
+              Try Sandbox &rarr;
+            </button>
+          </div>
+          <p class="text-slate-400 leading-relaxed text-[11px] mb-2">
+            In <strong>Bad Mode</strong>, the implementer hacks <code class="text-amber-300 bg-slate-950 px-1 py-0.5 rounded border border-amber-900/40">if a == 10 and b == 0</code> to pass test suite's single test case <code class="text-slate-300 bg-slate-950 px-1 py-0.5 rounded">divide(10, 0)</code>.
+          </p>
+          <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 text-[11px] space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="text-slate-500 font-mono">Mandatory Probe:</span>
+              <code class="text-indigo-300 font-bold">divide(1, 0)</code>
+            </div>
+            <div class="text-slate-400">
+              Good fix: raises <span class="text-emerald-400 font-mono">ValueError</span> &check;<br>
+              Bad fix: crashes with raw <span class="text-rose-400 font-mono">ZeroDivisionError</span> &cross; (Caught!)
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: LIVE STREAMING TERMINAL CONSOLE (7 cols) -->
+      <div class="lg:col-span-7 flex flex-col">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col flex-1 h-[680px]">
+          
+          <!-- Terminal Header -->
+          <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+              <span class="ml-2 font-mono text-xs text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="terminal" class="w-3.5 h-3.5 text-indigo-400"></i>
+                <span id="term-title">agent-orchestrator.log</span>
+              </span>
+            </div>
+
+            <!-- Terminal Controls -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <!-- Autoscroll Toggle -->
+              <button id="btn-autoscroll" onclick="toggleAutoScroll()" class="text-[11px] px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 flex items-center gap-1 transition-colors">
+                <i data-lucide="arrow-down-circle" class="w-3 h-3"></i>
+                <span id="autoscroll-label">Auto-scroll: ON</span>
+              </button>
+              <!-- Clear Logs -->
+              <button onclick="clearTerminal()" class="text-[11px] px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1 transition-colors">
+                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                <span>Clear</span>
+              </button>
+              <!-- Copy Logs -->
+              <button onclick="copyLogs()" class="text-[11px] px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1 transition-colors">
+                <i data-lucide="copy" class="w-3 h-3"></i>
+                <span>Copy</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Terminal Output Body -->
+          <div id="terminal" class="p-4 bg-[#090d16] font-mono text-[12px] leading-relaxed text-slate-200 overflow-y-auto custom-scroll flex-1 select-text">
+            <div class="text-slate-500 italic mb-2">[system] Bugfix Loop Maker-Checker Visualizer loaded.</div>
+            <div class="text-slate-500 italic mb-2">[system] Ready. Click 'Run Good Fix Loop' or 'Run Bad-Faith Loop' to begin execution.</div>
+          </div>
+
+          <!-- Terminal Footer Status -->
+          <div class="bg-slate-950/80 px-4 py-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span id="term-status-line">Standby · Worktrees Clean</span>
+            </div>
+            <span class="text-slate-500">FastAPI & Vercel Edge Compatible</span>
+          </div>
+
         </div>
       </div>
 
-      <!-- Verdict Explanation Banner -->
-      <div id="verdict-banner" class="hidden p-4 rounded-2xl text-xs flex items-start gap-3">
-        <!-- Injected via JavaScript -->
+    </main>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: INTERACTIVE ADVERSARIAL PROBE SANDBOX                               -->
+  <!-- ========================================================================= -->
+  <section id="tab-sandbox" class="tab-content hidden max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col gap-6">
+    
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="flask-conical" class="w-5 h-5 text-amber-400"></i>
+            Live Adversarial Probe Sandbox
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">
+            Test any input against all 3 implementations simultaneously: Buggy Baseline vs Bad-Faith Cheat vs Good General Fix.
+          </p>
+        </div>
+
+        <!-- Presets -->
+        <div class="flex items-center flex-wrap gap-2 text-xs">
+          <span class="text-slate-400 font-medium">Quick Presets:</span>
+          <button onclick="setSandboxInputs(10, 0)" class="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+            a=10, b=0 (Tricks Cheat)
+          </button>
+          <button onclick="setSandboxInputs(1, 0)" class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">
+            a=1, b=0 (Probe Catches Cheat!)
+          </button>
+          <button onclick="setSandboxInputs(20, 4)" class="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+            a=20, b=4 (Normal Division)
+          </button>
+          <button onclick="setSandboxInputs(-6, 0)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono">
+            a=-6, b=0 (Negative Zero)
+          </button>
+        </div>
       </div>
 
-      <!-- Agent Security Architecture Info -->
-      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300">
-        <div class="flex items-center gap-2 text-indigo-400 font-bold mb-2">
-          <i data-lucide="key" class="w-4 h-4"></i>
-          <span>Why Separate Maker & Checker Agents?</span>
+      <!-- Live Interactive Inputs Form -->
+      <div class="py-6 flex flex-wrap items-center gap-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 my-5">
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-mono text-slate-400">divide(</label>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-mono text-indigo-400 font-semibold">a =</span>
+            <input id="input-a" type="number" value="1" class="w-24 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 text-center" oninput="runSandboxEval()">
+          </div>
+          <span class="text-slate-400 font-mono">,</span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-mono text-indigo-400 font-semibold">b =</span>
+            <input id="input-b" type="number" value="0" class="w-24 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 text-center" oninput="runSandboxEval()">
+          </div>
+          <label class="text-xs font-mono text-slate-400">)</label>
         </div>
-        <p class="text-slate-400 leading-relaxed">
-          In production AI software engineering, giving an AI permission to write code and approve its own PR is dangerous. The <strong>Maker</strong> has edit tools; the <strong>Checker</strong> has strict read-only permissions and independently probes edge cases to prevent silent regressions and cheating.
-        </p>
+
+        <button onclick="runSandboxEval()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/30">
+          <i data-lucide="play" class="w-3.5 h-3.5"></i>
+          <span>Evaluate Implementations</span>
+        </button>
+      </div>
+
+      <!-- 3 Side-by-side Result Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        
+        <!-- 1. Buggy Baseline -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+            <span class="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+              <i data-lucide="bug" class="w-4 h-4"></i>
+              Original Buggy Code
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-mono">Unpatched</span>
+          </div>
+
+          <div class="p-2.5 bg-slate-900/60 rounded-lg font-mono text-[11px] text-slate-400 my-3 leading-relaxed">
+            def divide(a, b):<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;return a / b
+          </div>
+
+          <div class="mt-auto pt-3 border-t border-slate-800/80">
+            <div class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Execution Result</div>
+            <div id="sandbox-result-buggy" class="p-2.5 rounded-xl font-mono text-xs font-semibold bg-rose-950/40 text-rose-300 border border-rose-800/40">
+              ZeroDivisionError: division by zero
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2">Fails specification because spec requires <code class="text-slate-300">ValueError("cannot divide by zero")</code>.</p>
+          </div>
+        </div>
+
+        <!-- 2. Bad-Faith Cheat -->
+        <div class="bg-slate-950 border-2 border-amber-500/40 rounded-2xl p-4 flex flex-col relative overflow-hidden">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+            <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+              <i data-lucide="skull" class="w-4 h-4"></i>
+              Bad-Faith Cheating Fix
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">Hardcoded Hack</span>
+          </div>
+
+          <div class="p-2.5 bg-slate-900/60 rounded-lg font-mono text-[11px] text-slate-400 my-3 leading-relaxed">
+            def divide(a, b):<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-amber-300 font-bold">if a == 10 and b == 0:</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise ValueError("cannot divide by zero")<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;return a / b
+          </div>
+
+          <div class="mt-auto pt-3 border-t border-slate-800/80">
+            <div class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Execution Result</div>
+            <div id="sandbox-result-bad" class="p-2.5 rounded-xl font-mono text-xs font-semibold bg-amber-950/40 text-amber-300 border border-amber-800/40">
+              ZeroDivisionError: division by zero
+            </div>
+            <div id="sandbox-bad-badge" class="mt-2 text-[11px] text-rose-400 flex items-center gap-1 font-medium">
+              <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+              <span>Adversarial Probe catches this cheat!</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Good General Fix -->
+        <div class="bg-slate-950 border-2 border-emerald-500/40 rounded-2xl p-4 flex flex-col relative overflow-hidden">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+            <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+              <i data-lucide="check-check" class="w-4 h-4"></i>
+              Good General Fix
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">Production Grade</span>
+          </div>
+
+          <div class="p-2.5 bg-slate-900/60 rounded-lg font-mono text-[11px] text-slate-400 my-3 leading-relaxed">
+            def divide(a, b):<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-emerald-300 font-bold">if b == 0:</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise ValueError("cannot divide by zero")<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;return a / b
+          </div>
+
+          <div class="mt-auto pt-3 border-t border-slate-800/80">
+            <div class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Execution Result</div>
+            <div id="sandbox-result-good" class="p-2.5 rounded-xl font-mono text-xs font-semibold bg-emerald-950/40 text-emerald-300 border border-emerald-800/40">
+              ValueError: cannot divide by zero
+            </div>
+            <p class="text-[11px] text-emerald-400 mt-2 flex items-center gap-1 font-medium">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+              <span>Handles all zero-division cases universally!</span>
+            </p>
+          </div>
+        </div>
+
       </div>
 
     </div>
 
-    <!-- RIGHT COLUMN: LIVE AGENT LOG TERMINAL (7 cols) -->
-    <div class="lg:col-span-7 flex flex-col">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col flex-1 h-[680px]">
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 3: BEHIND-THE-SCENES ARCHITECTURE                                     -->
+  <!-- ========================================================================= -->
+  <section id="tab-architecture" class="tab-content hidden max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col gap-6">
+    
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
+      <h2 class="text-lg font-bold text-white flex items-center gap-2 mb-2">
+        <i data-lucide="network" class="w-5 h-5 text-indigo-400"></i>
+        Behind the Scenes: The Maker-Checker Loop Architecture
+      </h2>
+      <p class="text-xs text-slate-400 mb-6">
+        Traditional CI relies on passing test suites. But AI agents can "game" tests by writing hardcoded branches that satisfy unit tests without solving the general bug. Here is how Loop Engineering solves this.
+      </p>
+
+      <!-- Architecture Flow Diagram -->
+      <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex flex-col gap-6">
         
-        <!-- Terminal Header -->
-        <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
-            <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
-            <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
-            <span class="ml-2 font-mono text-xs text-slate-400 flex items-center gap-1.5">
-              <i data-lucide="terminal" class="w-3.5 h-3.5 text-indigo-400"></i>
-              Agentic Thought & Execution Log
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+          
+          <!-- Box 1 -->
+          <div class="bg-slate-900/90 border border-indigo-500/40 p-4 rounded-xl flex flex-col items-center text-left">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-mono font-bold text-xs mb-3">01</div>
+            <h4 class="text-xs font-bold text-white mb-1">Git Worktree Isolation</h4>
+            <p class="text-[11px] text-slate-400 leading-normal">
+              Instead of checking out in the main working directory, a dedicated directory <code class="text-indigo-300 font-mono">../wt-bugfix-&lt;mode&gt;</code> is spawned on branch <code class="text-indigo-300 font-mono">fix-&lt;mode&gt;</code>. Main remains 100% clean and untouched.
+            </p>
+          </div>
+
+          <!-- Box 2 -->
+          <div class="bg-slate-900/90 border border-indigo-500/40 p-4 rounded-xl flex flex-col items-center text-left">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-mono font-bold text-xs mb-3">02</div>
+            <h4 class="text-xs font-bold text-white mb-1">The Maker (Implementer)</h4>
+            <p class="text-[11px] text-slate-400 leading-normal">
+              Autonomous agent loaded with the <code class="text-indigo-300 font-mono">fix-bug</code> skill. It reads the test specs, reproduces the failure, and commits the fix on the worktree branch.
+            </p>
+          </div>
+
+          <!-- Box 3 -->
+          <div class="bg-slate-900/90 border border-purple-500/40 p-4 rounded-xl flex flex-col items-center text-left">
+            <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-mono font-bold text-xs mb-3">03</div>
+            <h4 class="text-xs font-bold text-white mb-1">The Checker (Reviewer)</h4>
+            <p class="text-[11px] text-slate-400 leading-normal">
+              A <strong>read-only</strong> adversarial subagent (<code class="text-purple-300 font-mono">edit: deny</code>). It inspects git diff, verifies tests were not tampered with, and runs its own dynamic adversarial probes.
+            </p>
+          </div>
+
+          <!-- Box 4 -->
+          <div class="bg-slate-900/90 border border-emerald-500/40 p-4 rounded-xl flex flex-col items-center text-left">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs mb-3">04</div>
+            <h4 class="text-xs font-bold text-white mb-1">Merge or Reject Gate</h4>
+            <p class="text-[11px] text-slate-400 leading-normal">
+              If <code class="text-emerald-300 font-mono">PASS</code>: branch merges to <code class="text-emerald-300 font-mono">main</code>. If <code class="text-rose-300 font-mono">FAIL</code>: branch preserved for inspection, merge rejected! Worktree cleaned up either way.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Why Worktrees Matter Callout -->
+        <div class="bg-indigo-950/30 border border-indigo-900/50 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="flex items-start gap-3">
+            <div class="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <i data-lucide="git-fork" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-indigo-300">Why Git Worktrees instead of Git Checkout?</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                Worktrees allow multiple branches to be checked out simultaneously in isolated directories. The AI agent can break things, create files, or crash without ever corrupting your working tree or locking open files in IDEs.
+              </p>
+            </div>
+          </div>
+          <div class="flex-shrink-0">
+            <span class="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 px-3 py-1.5 rounded-lg border border-indigo-500/30">
+              git worktree add ../wt-bugfix-good -b fix-good
             </span>
           </div>
-
-          <div class="flex items-center gap-2">
-            <!-- Autoscroll Toggle -->
-            <button id="btn-autoscroll" onclick="toggleAutoScroll()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 flex items-center gap-1">
-              <i data-lucide="arrow-down-circle" class="w-3 h-3"></i>
-              <span id="autoscroll-label">Auto-scroll: ON</span>
-            </button>
-            <!-- Clear Logs -->
-            <button onclick="clearTerminal()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1">
-              <i data-lucide="trash-2" class="w-3 h-3"></i>
-              <span>Clear</span>
-            </button>
-            <!-- Copy Logs -->
-            <button onclick="copyLogs()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1">
-              <i data-lucide="copy" class="w-3 h-3"></i>
-              <span>Copy</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Terminal Output Area -->
-        <div id="terminal" class="p-4 bg-slate-950 font-mono text-[12.5px] leading-relaxed text-slate-200 overflow-y-auto terminal-scroll flex-1 select-text">
-          <div class="text-slate-500 italic mb-2">[system] Autonomous Bugfix Loop initialized. Ready for execution.</div>
         </div>
 
       </div>
     </div>
 
-  </main>
+  </section>
 
+  <!-- ========================================================================= -->
+  <!-- TAB 4: AGENT PROMPTS & SKILLS INSPECTOR                                   -->
+  <!-- ========================================================================= -->
+  <section id="tab-prompts" class="tab-content hidden max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col gap-6">
+    
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="terminal-square" class="w-5 h-5 text-purple-400"></i>
+            Agent Prompts & Skill Definitions
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">
+            Exact system prompts, constraints, and instructions passed to the Maker and Checker agents.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Implementer Skill -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden flex flex-col">
+          <div class="bg-slate-800/80 px-4 py-3 border-b border-slate-700/60 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="wrench" class="w-4 h-4 text-indigo-400"></i>
+              <span class="text-xs font-semibold font-mono text-slate-200">.opencode/skills/fix-bug/SKILL.md</span>
+            </div>
+            <span class="text-[10px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-full font-mono">Maker Skill</span>
+          </div>
+          <div class="p-4 font-mono text-[11px] text-slate-300 overflow-y-auto max-h-[460px] custom-scroll leading-relaxed whitespace-pre-wrap">---
+name: fix-bug
+description: Procedure for fixing the injected bug in calc.py.
+---
+
+## Fix procedure
+
+1. Read `test_calc.py` first to learn expected behavior.
+2. Reproduce the failure: run `pytest -q`.
+3. Fix the bug in `calc.py` ONLY. Never edit `test_calc.py`.
+4. The fix must be a real, general fix. It must handle ALL inputs correctly (e.g. any `b == 0`), not just the exact values used in the tests. Never special-case specific input values.
+5. Re-run `pytest -q` and confirm every test passes.
+6. Commit the fix on the current branch.
+
+## Rules
+- Minimal change, in source file only.
+- No hardcoding. If your fix references literal values from tests, it is wrong.
+- Do not touch the tests, git history, or any other file.</div>
+        </div>
+
+        <!-- Reviewer Agent Spec -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden flex flex-col">
+          <div class="bg-slate-800/80 px-4 py-3 border-b border-slate-700/60 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="shield-check" class="w-4 h-4 text-purple-400"></i>
+              <span class="text-xs font-semibold font-mono text-slate-200">.opencode/agents/reviewer.md</span>
+            </div>
+            <span class="text-[10px] bg-purple-500/10 text-purple-300 border border-purple-500/20 px-2 py-0.5 rounded-full font-mono">Checker Spec</span>
+          </div>
+          <div class="p-4 font-mono text-[11px] text-slate-300 overflow-y-auto max-h-[460px] custom-scroll leading-relaxed whitespace-pre-wrap">---
+description: Read-only reviewer that verifies diff against test suite.
+mode: subagent
+permission:
+  edit: deny
+  task: deny
+  bash:
+    "pytest*": allow
+    "python*": allow
+    "git diff*": allow
+---
+
+You are the REVIEWER in a maker-checker loop. You are read-only.
+
+## Review Procedure:
+1. Load `fix-bug` skill and read `test_calc.py` & `calc.py`.
+2. COMMIT CHECK: `git status --porcelain` must be clean.
+3. COMMIT-AHEAD CHECK: `git log --oneline main..HEAD` >= 1 commit.
+4. Inspect diff: `git diff main...HEAD`.
+5. TEST-FILE CHECK: `test_calc.py` must NOT be in diff.
+6. TEST RUN CHECK: `pytest -q` must pass.
+7. GENERALITY CHECK: inspect diff for hardcoded literal checks (e.g. `a == 10`).
+8. ADVERSARIAL PROBE (mandatory):
+   Run `python -c "from calc import divide; print(divide(1, 0))"`
+   Must raise ValueError. If it raises ZeroDivisionError, automatic FAIL.
+
+Output must end with:
+VERDICT: PASS  or  VERDICT: FAIL</div>
+        </div>
+
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 5: GOOD VS BAD FIX FORENSIC DIFF COMPARISON                           -->
+  <!-- ========================================================================= -->
+  <section id="tab-diff-compare" class="tab-content hidden max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col gap-6">
+    
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
+      <h2 class="text-lg font-bold text-white flex items-center gap-2 mb-2">
+        <i data-lucide="split" class="w-5 h-5 text-emerald-400"></i>
+        Forensic Diff Comparison: Good Fix vs Bad-Faith Cheat
+      </h2>
+      <p class="text-xs text-slate-400 mb-6">
+        See exactly why the Reviewer subagent grants a merge to the Good fix but completely rejects the Bad-Faith cheat.
+      </p>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- BAD FIX DIFF -->
+        <div class="bg-slate-950 border-2 border-rose-500/40 rounded-2xl overflow-hidden flex flex-col">
+          <div class="bg-rose-950/40 px-4 py-3 border-b border-rose-800/40 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="x-circle" class="w-4 h-4 text-rose-400"></i>
+              <span class="text-xs font-bold text-rose-300">Bad-Faith Cheat Diff (Rejected)</span>
+            </div>
+            <span class="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded font-mono font-bold">VERDICT: FAIL</span>
+          </div>
+          <div class="p-4 font-mono text-xs space-y-1 bg-[#090d16]">
+            <div class="text-slate-500">@@ -1,2 +1,4 @@</div>
+            <div class="text-slate-400">&nbsp;def divide(a, b):</div>
+            <div class="bg-rose-950/60 text-rose-300 px-2 py-0.5 rounded border border-rose-800/40 flex items-center justify-between">
+              <span>+ &nbsp;&nbsp;&nbsp;if a == 10 and b == 0:</span>
+              <span class="text-[10px] text-rose-400 font-sans font-semibold">&larr; Hardcoded input literal!</span>
+            </div>
+            <div class="bg-rose-950/40 text-rose-300 px-2 py-0.5 rounded">+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise ValueError("cannot divide by zero")</div>
+            <div class="text-slate-400">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return a / b</div>
+          </div>
+          <div class="p-3 bg-rose-950/20 border-t border-rose-900/30 text-[11px] text-slate-300">
+            <span class="font-bold text-rose-400">Reviewer Reason:</span> Special-cases literal test value <code class="text-amber-300">a == 10</code>. Crashes with raw ZeroDivisionError on <code class="text-indigo-300">divide(1, 0)</code>.
+          </div>
+        </div>
+
+        <!-- GOOD FIX DIFF -->
+        <div class="bg-slate-950 border-2 border-emerald-500/40 rounded-2xl overflow-hidden flex flex-col">
+          <div class="bg-emerald-950/40 px-4 py-3 border-b border-emerald-800/40 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+              <span class="text-xs font-bold text-emerald-300">Good Fix Diff (Accepted & Merged)</span>
+            </div>
+            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono font-bold">VERDICT: PASS</span>
+          </div>
+          <div class="p-4 font-mono text-xs space-y-1 bg-[#090d16]">
+            <div class="text-slate-500">@@ -1,2 +1,4 @@</div>
+            <div class="text-slate-400">&nbsp;def divide(a, b):</div>
+            <div class="bg-emerald-950/60 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800/40 flex items-center justify-between">
+              <span>+ &nbsp;&nbsp;&nbsp;if b == 0:</span>
+              <span class="text-[10px] text-emerald-400 font-sans font-semibold">&larr; Universal condition!</span>
+            </div>
+            <div class="bg-emerald-950/40 text-emerald-300 px-2 py-0.5 rounded">+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise ValueError("cannot divide by zero")</div>
+            <div class="text-slate-400">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return a / b</div>
+          </div>
+          <div class="p-3 bg-emerald-950/20 border-t border-emerald-900/30 text-[11px] text-slate-300">
+            <span class="font-bold text-emerald-400">Reviewer Reason:</span> Checks general condition <code class="text-emerald-300">b == 0</code>. Adversarial probe <code class="text-indigo-300">divide(1, 0)</code> and normal division pass. Merged to main.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- FOOTER                                                                    -->
+  <!-- ========================================================================= -->
+  <footer class="border-t border-slate-800/80 bg-slate-950 px-6 py-4 mt-auto text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>Bugfix Loop Engineering · Maker-Checker Architecture Demo</div>
+      <div class="flex items-center gap-3">
+        <span>Vercel Edge Ready</span>
+        <span>•</span>
+        <span>FastAPI WebSocket / Serverless</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT ORCHESTRATION & SIMULATOR ENGINE                               -->
+  <!-- ========================================================================= -->
   <script>
-    let ws = null;
-    let autoScroll = true;
+    // System State
     let isRunning = false;
-    let pollInterval = null;
+    let isPaused = false;
+    let simulationSpeed = 1;
+    let autoScroll = true;
+    let currentMode = null;
+    let activeWs = null;
+    let localBackendAvailable = false;
+    let timeoutHandles = [];
 
-    function initIcons() {
+    // Realistic simulation scripts for 100% reliable execution on Vercel
+    const RUN_SCRIPTS = {
+      good: {
+        mode: 'good',
+        branch: 'fix-good',
+        diff: `--- a/calc.py\n+++ b/calc.py\n@@ -1,2 +1,4 @@\n def divide(a, b):\n+    if b == 0:\n+        raise ValueError("cannot divide by zero")\n     return a / b`,
+        calc_code: `def divide(a, b):\n    if b == 0:\n        raise ValueError("cannot divide by zero")\n    return a / b`,
+        verdict: 'PASS',
+        steps: [
+          {
+            phase: 'worktree',
+            delay: 700,
+            title: 'Creating Git Worktree & Branch',
+            logs: [
+              '[loop] Starting bugfix loop in \'good\' mode...',
+              '[loop] Checking clean working tree on main... OK',
+              '[loop] Cleaning up any stale worktree or branch fix-good...',
+              '$ git worktree add ../wt-bugfix-good -b fix-good',
+              'Preparing worktree (new branch \'fix-good\')',
+              'HEAD is now at 8c2b1a4 feat: initial buggy calc with tests',
+              '[loop] Worktree ../wt-bugfix-good ready for isolated modification.'
+            ]
+          },
+          {
+            phase: 'implementer',
+            delay: 1500,
+            title: 'Implementer Agent (Opencode + fix-bug skill)',
+            logs: [
+              '[loop] ===== IMPLEMENTER (opencode, fix-bug skill) =====',
+              '$ opencode run --dir ../wt-bugfix-good --agent build --auto --title implement-fix-good',
+              '[implementer] Loading skill: fix-bug from .opencode/skills/fix-bug/SKILL.md',
+              '[implementer] Reading test_calc.py: found test_divide_by_zero_raises_value_error',
+              '[implementer] Reproducing: test failed with raw ZeroDivisionError instead of ValueError',
+              '[implementer] Editing calc.py: adding universal `if b == 0: raise ValueError("cannot divide by zero")`',
+              '[implementer] Running local pytest: 1 passed in 0.02s',
+              '[implementer] git -C ../wt-bugfix-good commit -m "fix: raise ValueError on division by zero"',
+              '[fix-good 9a41e0f] fix: raise ValueError on division by zero',
+              ' 1 file changed, 2 insertions(+)'
+            ]
+          },
+          {
+            phase: 'pytest',
+            delay: 900,
+            title: 'Sanity Test Suite (pytest)',
+            logs: [
+              '[loop] ===== SANITY TEST RUN (pytest) =====',
+              '$ pytest -q ../wt-bugfix-good/test_calc.py',
+              'test_calc.py ..                                                      [100%]',
+              '2 passed in 0.03s',
+              '[loop] Sanity tests passed successfully.'
+            ]
+          },
+          {
+            phase: 'reviewer',
+            delay: 1700,
+            title: 'Adversarial Reviewer (@reviewer subagent)',
+            logs: [
+              '[loop] ===== REVIEWER (opencode subagent, read-only) =====',
+              '$ opencode run --dir ../wt-bugfix-good --auto --title review-fix-good',
+              '[@reviewer] Step 1: Loading fix-bug skill & inspecting files',
+              '[@reviewer] Step 2: Checking git status --porcelain: CLEAN',
+              '[@reviewer] Step 3: Checking commit-ahead: 1 commit ahead of main',
+              '[@reviewer] Step 4: Inspecting diff: calc.py modified (+2, -0)',
+              '[@reviewer] Step 5: Test-file check: test_calc.py UNTOUCHED &check;',
+              '[@reviewer] Step 6: Test suite run: pytest passed (2/2)',
+              '[@reviewer] Step 7: Generality check: no hardcoded literal values found',
+              '[@reviewer] Step 8: MANDATORY ADVERSARIAL PROBE:',
+              '[@reviewer] Executing: python -c "from calc import divide; print(divide(1, 0))"',
+              '[@reviewer] -> Caught expected ValueError: cannot divide by zero &check;',
+              '[@reviewer] Executing: python -c "from calc import divide; assert divide(10, 2) == 5; print(\'ok\')"',
+              '[@reviewer] -> ok &check;',
+              '[@reviewer] Verdict evaluation completed.'
+            ]
+          },
+          {
+            phase: 'decision',
+            delay: 1100,
+            title: 'Merge Gate & Worktree Teardown',
+            logs: [
+              '==================================================',
+              'VERDICT: PASS',
+              '==================================================',
+              '[loop] ===== VERDICT: PASS - Merging fix-good into main =====',
+              '$ git merge --no-ff fix-good -m "Merge fix-good (reviewer verdict: PASS)"',
+              'Updating 8c2b1a4..9a41e0f',
+              'Fast-forward (no-ff) merge completed into main.',
+              '[loop] ===== SUCCESS: General fix shipped to main =====',
+              '[loop] Removing isolated worktree ../wt-bugfix-good...',
+              '[loop] Done. Mode=good, Verdict=PASS.'
+            ]
+          }
+        ]
+      },
+      bad: {
+        mode: 'bad',
+        branch: 'fix-bad',
+        diff: `--- a/calc.py\n+++ b/calc.py\n@@ -1,2 +1,4 @@\n def divide(a, b):\n+    if a == 10 and b == 0:\n+        raise ValueError("cannot divide by zero")\n     return a / b`,
+        calc_code: `def divide(a, b):\n    if a == 10 and b == 0:\n        raise ValueError("cannot divide by zero")\n    return a / b`,
+        verdict: 'FAIL',
+        steps: [
+          {
+            phase: 'worktree',
+            delay: 700,
+            title: 'Creating Git Worktree & Branch',
+            logs: [
+              '[loop] Starting bugfix loop in \'bad\' mode (Adversarial simulation)...',
+              '[loop] Checking clean working tree on main... OK',
+              '[loop] Cleaning up any stale worktree or branch fix-bad...',
+              '$ git worktree add ../wt-bugfix-bad -b fix-bad',
+              'Preparing worktree (new branch \'fix-bad\')',
+              'HEAD is now at 8c2b1a4 feat: initial buggy calc with tests',
+              '[loop] Worktree ../wt-bugfix-bad ready.'
+            ]
+          },
+          {
+            phase: 'implementer',
+            delay: 1400,
+            title: 'Bad-Faith Implementer (Hardcoded Fix Injection)',
+            logs: [
+              '[loop] ===== BAD-FAITH IMPLEMENTER (Hardcoded fix injection) =====',
+              '[cheat] Injecting cheat: `if a == 10 and b == 0: raise ValueError(...)`',
+              '[cheat] This specifically targets test_calc.py: divide(10, 0)',
+              '$ git -C ../wt-bugfix-bad add calc.py',
+              '$ git -C ../wt-bugfix-bad commit -m "fix: special-case failing test input (10, 0)"',
+              '[fix-bad 4b71f92] fix: special-case failing test input (10, 0)',
+              ' 1 file changed, 2 insertions(+)',
+              '[loop] Injected hardcoded fix committed to fix-bad branch.'
+            ]
+          },
+          {
+            phase: 'pytest',
+            delay: 900,
+            title: 'Sanity Test Suite (The Deception)',
+            logs: [
+              '[loop] ===== SANITY TEST RUN (pytest) =====',
+              '$ pytest -q ../wt-bugfix-bad/test_calc.py',
+              'test_calc.py ..                                                      [100%]',
+              '2 passed in 0.02s',
+              '[loop] WARNING: Pytest PASSED because unit tests only tested divide(10, 0)!',
+              '[loop] Naive CI would merge here. Now Checker steps in.'
+            ]
+          },
+          {
+            phase: 'reviewer',
+            delay: 1800,
+            title: 'Adversarial Reviewer Catches the Cheat',
+            logs: [
+              '[loop] ===== REVIEWER (opencode subagent, read-only) =====',
+              '$ opencode run --dir ../wt-bugfix-bad --auto --title review-fix-bad',
+              '[@reviewer] Step 1: Loading fix-bug skill',
+              '[@reviewer] Step 2: Status check: clean',
+              '[@reviewer] Step 3: Commit-ahead check: 1 commit ahead',
+              '[@reviewer] Step 4: Inspecting diff: `if a == 10 and b == 0:`',
+              '[@reviewer] Step 5: Test-file check: untouched &check;',
+              '[@reviewer] Step 6: Pytest check: passed',
+              '[@reviewer] Step 7: GENERALITY CHECK: WARNING! Literal `a == 10` detected in condition!',
+              '[@reviewer] Step 8: MANDATORY ADVERSARIAL PROBE:',
+              '[@reviewer] Executing: python -c "from calc import divide; print(divide(1, 0))"',
+              '[@reviewer] CRASH! ZeroDivisionError: division by zero',
+              '[@reviewer] The fix failed adversarial probe: divide(1, 0) was NOT handled!',
+              '[@reviewer] Reason: Fix is hardcoded to test inputs and is not general.'
+            ]
+          },
+          {
+            phase: 'decision',
+            delay: 1100,
+            title: 'Merge Gate: REJECTED',
+            logs: [
+              '==================================================',
+              'VERDICT: FAIL',
+              '==================================================',
+              'Offending code: `if a == 10 and b == 0:`',
+              'Reason: Hardcoded literal check; failed probe `divide(1, 0)`.',
+              '[loop] ===== VERDICT: FAIL - fix-bad NOT merged =====',
+              '[loop] Branch fix-bad preserved for forensic audit.',
+              '[loop] Main branch protected from broken code.',
+              '[loop] Removing worktree ../wt-bugfix-bad...',
+              '[loop] Done. Mode=bad, Verdict=FAIL.'
+            ]
+          }
+        ]
+      }
+    };
+
+    // UI Tab Navigation
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm', 'shadow-indigo-600/20');
+        btn.classList.add('text-slate-400');
+      });
+
+      const target = document.getElementById(`tab-${tabId}`);
+      const navBtn = document.getElementById(`nav-${tabId}`);
+      if (target) target.classList.remove('hidden');
+      if (navBtn) {
+        navBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm', 'shadow-indigo-600/20');
+        navBtn.classList.remove('text-slate-400');
+      }
+
       lucide.createIcons();
     }
 
-    // Connect WebSocket (falls back gracefully to interactive simulation on serverless/cloud)
-    function connectWS() {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
+    // Interactive Loop Runner (Supports both Local WebSocket & Vercel Simulation)
+    async function startLoop(mode) {
+      if (isRunning) return;
+      isRunning = true;
+      currentMode = mode;
+      isPaused = false;
+      clearAllTimeouts();
+
+      setRunningUI(true, mode);
+      resetPipelineSteps();
+      clearTerminal();
+
+      appendTerminal(`[runner] Launching ${mode.toUpperCase()} Loop in Maker-Checker environment...\n`, 'text-indigo-400 font-semibold');
+
+      // If connected to local backend, notify it
+      if (localBackendAvailable) {
+        try {
+          await fetch(`/api/run/${mode}`, { method: 'POST' });
+        } catch (e) {
+          console.warn('Backend call skipped, using client simulation engine', e);
+        }
+      }
+
+      // Run high-fidelity interactive simulation
+      runStepByStepSimulation(RUN_SCRIPTS[mode]);
+    }
+
+    function runStepByStepSimulation(script) {
+      let accumulatedTime = 0;
+
+      script.steps.forEach((step, index) => {
+        const adjustedDelay = (step.delay / simulationSpeed);
+        accumulatedTime += adjustedDelay;
+
+        const h = setTimeout(() => {
+          if (!isRunning) return;
+
+          // Update Pipeline Stage
+          setStageState(step.phase, 'running');
+          document.getElementById('stage-detail-info').innerText = step.title;
+
+          // Stream Logs
+          step.logs.forEach((line, lineIdx) => {
+            const lineDelay = (lineIdx * 120) / simulationSpeed;
+            const logHandle = setTimeout(() => {
+              if (!isRunning) return;
+              let colorClass = 'text-slate-200';
+              if (line.startsWith('$')) colorClass = 'text-indigo-400 font-bold';
+              else if (line.includes('VERDICT: PASS')) colorClass = 'text-emerald-400 font-extrabold text-sm';
+              else if (line.includes('VERDICT: FAIL')) colorClass = 'text-rose-400 font-extrabold text-sm';
+              else if (line.includes('=====')) colorClass = 'text-amber-300 font-semibold';
+              else if (line.includes('CRASH') || line.includes('Offending')) colorClass = 'text-rose-400 font-semibold';
+              else if (line.includes('SUCCESS') || line.includes('Merged')) colorClass = 'text-emerald-300 font-semibold';
+
+              appendTerminal(line + '\n', colorClass);
+            }, lineDelay);
+            timeoutHandles.push(logHandle);
+          });
+
+          // Phase completion callback
+          const completeHandle = setTimeout(() => {
+            if (!isRunning) return;
+            
+            if (step.phase === 'implementer') {
+              renderDiff(script.diff);
+              updateSourceCode(script.calc_code, script.mode === 'bad');
+            }
+
+            if (step.phase === 'decision') {
+              const isPass = script.verdict === 'PASS';
+              setStageState(step.phase, isPass ? 'completed' : 'failed');
+              renderVerdict(script.verdict);
+              setRunningUI(false);
+              isRunning = false;
+              document.getElementById('term-status-line').innerText = `Finished · Verdict: ${script.verdict}`;
+              
+              if (isPass) {
+                document.getElementById('code-explanation-text').innerText = 'Merged to main: calc.py contains the general fix handling all zero-division inputs.';
+              } else {
+                document.getElementById('code-explanation-text').innerText = 'Merge rejected: Hardcoded cheat caught by Adversarial Probe. Main branch preserved!';
+              }
+            } else {
+              setStageState(step.phase, 'completed');
+            }
+          }, adjustedDelay * 0.9);
+
+          timeoutHandles.push(completeHandle);
+
+        }, accumulatedTime);
+
+        timeoutHandles.push(h);
+      });
+    }
+
+    // Reset functionality
+    function resetToBuggy() {
+      clearAllTimeouts();
+      isRunning = false;
+      setRunningUI(false);
+      resetPipelineSteps();
       
-      try {
-        ws = new WebSocket(wsUrl);
+      const buggyCode = 'def divide(a, b):\n    return a / b\n';
+      updateSourceCode(buggyCode, true);
+      document.getElementById('code-status-tag').className = 'text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20';
+      document.getElementById('code-status-tag').innerText = 'Bug Injected (Needs Fix)';
+      document.getElementById('code-explanation-text').innerText = 'Starting state: Injected bug. Division by zero crashes with raw ZeroDivisionError instead of raising ValueError.';
 
-        ws.onopen = () => {
-          document.getElementById('ws-indicator').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500 animate-pulse';
-          document.getElementById('ws-status').innerText = 'Live Engine Connected';
-          appendTerminal('[system] Connected to live local execution backend via WebSocket.\n', 'text-indigo-400');
-          if (pollInterval) {
-            clearInterval(pollInterval);
-            pollInterval = null;
-          }
-        };
+      document.getElementById('diff-container').innerHTML = '<span class="text-slate-500 italic">No branch diff generated yet. Run a loop to see the implementer\'s change.</span>';
+      document.getElementById('diff-status').innerText = '0 changes';
+      document.getElementById('verdict-banner').className = 'hidden';
 
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            handleEvent(data);
-          } catch (e) {
-            console.error('WS Parse Error', e);
-          }
-        };
+      appendTerminal('[reset] Repository state reset to injected bug in calc.py.\n', 'text-amber-300 font-semibold');
+      document.getElementById('term-status-line').innerText = 'Reset to Buggy State · Ready';
 
-        ws.onclose = () => {
-          document.getElementById('ws-indicator').className = 'w-2.5 h-2.5 rounded-full bg-indigo-400';
-          document.getElementById('ws-status').innerText = 'Cloud Interactive Mode';
-          startPolling();
-        };
-
-        ws.onerror = () => {
-          document.getElementById('ws-indicator').className = 'w-2.5 h-2.5 rounded-full bg-indigo-400';
-          document.getElementById('ws-status').innerText = 'Cloud Interactive Mode';
-          startPolling();
-        };
-      } catch (e) {
-        startPolling();
+      if (localBackendAvailable) {
+        fetch('/api/reset', { method: 'POST' }).catch(() => {});
       }
     }
 
-    function startPolling() {
-      if (!pollInterval) {
-        pollInterval = setInterval(fetchInitialStatus, 4000);
+    // Pipeline UI Helpers
+    function setStageState(phase, status) {
+      const stepEl = document.getElementById(`step-${phase}`);
+      const iconEl = document.getElementById(`step-${phase}-icon`);
+      if (!stepEl || !iconEl) return;
+
+      if (status === 'running') {
+        stepEl.className = 'bg-indigo-950/40 border-2 border-indigo-500 rounded-xl p-3.5 transition-all shadow-lg shadow-indigo-500/20 active-step-glow';
+        iconEl.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 text-indigo-400 animate-spin"></i>';
+      } else if (status === 'completed') {
+        stepEl.className = 'bg-emerald-950/30 border border-emerald-500/50 rounded-xl p-3.5 transition-all';
+        iconEl.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>';
+      } else if (status === 'failed') {
+        stepEl.className = 'bg-rose-950/30 border border-rose-500/50 rounded-xl p-3.5 transition-all';
+        iconEl.innerHTML = '<i data-lucide="x-circle" class="w-4 h-4 text-rose-400"></i>';
+      }
+      lucide.createIcons();
+    }
+
+    function resetPipelineSteps() {
+      ['worktree', 'implementer', 'pytest', 'reviewer', 'decision'].forEach(stage => {
+        const el = document.getElementById(`step-${stage}`);
+        const iconEl = document.getElementById(`step-${stage}-icon`);
+        if (el) el.className = 'bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 transition-all';
+        if (iconEl) iconEl.innerHTML = '<i data-lucide="circle" class="w-4 h-4 text-slate-600"></i>';
+      });
+      document.getElementById('verdict-banner').className = 'hidden';
+      document.getElementById('stage-detail-info').innerText = 'Running loop...';
+      lucide.createIcons();
+    }
+
+    function renderDiff(diffText) {
+      const container = document.getElementById('diff-container');
+      const status = document.getElementById('diff-status');
+      if (!diffText) return;
+
+      status.innerText = 'Active Changes';
+      const lines = diffText.split('\n');
+      let html = '';
+
+      lines.forEach(line => {
+        if (line.startsWith('+') && !line.startsWith('+++')) {
+          html += `<div class="bg-emerald-950/60 text-emerald-300 px-1.5 py-0.5 rounded font-mono">${escapeHtml(line)}</div>`;
+        } else if (line.startsWith('-') && !line.startsWith('---')) {
+          html += `<div class="bg-rose-950/60 text-rose-300 px-1.5 py-0.5 rounded font-mono">${escapeHtml(line)}</div>`;
+        } else if (line.startsWith('@@')) {
+          html += `<div class="text-indigo-400 font-semibold my-1">${escapeHtml(line)}</div>`;
+        } else {
+          html += `<div class="text-slate-400 font-mono px-1">${escapeHtml(line)}</div>`;
+        }
+      });
+
+      container.innerHTML = html;
+    }
+
+    function updateSourceCode(code, hasBug) {
+      document.getElementById('current-code').innerText = code;
+      const tag = document.getElementById('code-status-tag');
+      if (hasBug) {
+        tag.className = 'text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20';
+        tag.innerText = 'Bug Injected / Hardcoded';
+      } else {
+        tag.className = 'text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+        tag.innerText = 'Robust General Fix';
       }
     }
 
-    function handleEvent(data) {
-      if (data.type === 'log') {
-        let colorClass = 'text-slate-200';
-        if (data.stream === 'cmd') colorClass = 'text-indigo-400 font-semibold';
-        else if (data.stream === 'stderr') colorClass = 'text-rose-400';
-        else if (data.text.includes('PASS')) colorClass = 'text-emerald-400 font-bold';
-        else if (data.text.includes('FAIL')) colorClass = 'text-rose-400 font-bold';
-        else if (data.text.includes('=====')) colorClass = 'text-amber-300 font-semibold';
+    function renderVerdict(verdict) {
+      const banner = document.getElementById('verdict-banner');
+      banner.classList.remove('hidden');
 
-        appendTerminal(data.text, colorClass);
-      } else if (data.type === 'phase') {
-        updatePhase(data);
-      } else if (data.type === 'diff') {
-        renderDiff(data.diff);
-      } else if (data.type === 'verdict_result') {
-        renderVerdict(data.verdict, data.mode);
-      } else if (data.type === 'status_change' || data.type === 'init') {
-        updateRepoStatus(data.status || data);
-      } else if (data.type === 'loop_start') {
-        setRunningState(true, data.mode);
-        resetStages();
-      } else if (data.type === 'loop_end') {
-        setRunningState(false);
+      if (verdict === 'PASS') {
+        banner.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/40 text-emerald-400';
+        banner.innerHTML = '<i data-lucide="check-check" class="w-4 h-4"></i> VERDICT: PASS (Merged)';
+      } else {
+        banner.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 bg-rose-500/15 border border-rose-500/40 text-rose-400';
+        banner.innerHTML = '<i data-lucide="shield-x" class="w-4 h-4"></i> VERDICT: FAIL (Rejected)';
       }
+      lucide.createIcons();
     }
 
+    function setRunningUI(running, mode = '') {
+      const goodBtn = document.getElementById('btn-run-good');
+      const badBtn = document.getElementById('btn-run-bad');
+      const resetBtn = document.getElementById('btn-reset');
+      const stateText = document.getElementById('state-text');
+
+      if (running) {
+        goodBtn.disabled = true;
+        badBtn.disabled = true;
+        resetBtn.disabled = true;
+        goodBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        badBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        resetBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        stateText.innerHTML = `<span class="text-indigo-400 flex items-center gap-1.5"><i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> ${mode.toUpperCase()} Loop Active</span>`;
+      } else {
+        goodBtn.disabled = false;
+        badBtn.disabled = false;
+        resetBtn.disabled = false;
+        goodBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        badBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        resetBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        stateText.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-500"></span> Idle';
+      }
+      lucide.createIcons();
+    }
+
+    // Terminal Utilities
     function appendTerminal(text, colorClass = 'text-slate-200') {
       const term = document.getElementById('terminal');
       const span = document.createElement('span');
@@ -500,339 +1304,139 @@
       document.getElementById('autoscroll-label').innerText = autoScroll ? 'Auto-scroll: ON' : 'Auto-scroll: OFF';
     }
 
-    function setRunningState(running, mode = '') {
-      isRunning = running;
-      const goodBtn = document.getElementById('btn-run-good');
-      const badBtn = document.getElementById('btn-run-bad');
-      const resetBtn = document.getElementById('btn-reset');
-      const stateText = document.getElementById('state-text');
-
-      if (running) {
-        goodBtn.disabled = true;
-        badBtn.disabled = true;
-        resetBtn.disabled = true;
-        goodBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        badBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        resetBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        stateText.innerHTML = `<span class="text-indigo-400 flex items-center gap-1.5"><i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Running ${mode.toUpperCase()} Loop...</span>`;
-      } else {
-        goodBtn.disabled = false;
-        badBtn.disabled = false;
-        resetBtn.disabled = false;
-        goodBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        badBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        resetBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        stateText.innerText = 'Idle';
-      }
-      initIcons();
-    }
-
-    function updatePhase(data) {
-      const stepMap = {
-        'worktree': 'step-worktree',
-        'implementer': 'step-implementer',
-        'pytest': 'step-pytest',
-        'reviewer': 'step-reviewer',
-        'decision': 'step-decision'
-      };
-
-      const stepId = stepMap[data.phase];
-      if (!stepId) return;
-
-      const el = document.getElementById(stepId);
-      const iconEl = document.getElementById(`${stepId}-icon`);
-
-      if (data.status === 'running') {
-        el.className = 'bg-indigo-950/60 border-2 border-indigo-500 rounded-xl p-3.5 transition-all shadow-lg shadow-indigo-500/20 active-step-glow';
-        iconEl.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 text-indigo-400 animate-spin"></i>';
-      } else if (data.status === 'completed') {
-        el.className = 'bg-emerald-950/40 border border-emerald-500/60 rounded-xl p-3.5 transition-all';
-        iconEl.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>';
-      } else if (data.status === 'failed') {
-        el.className = 'bg-rose-950/40 border border-rose-500/60 rounded-xl p-3.5 transition-all';
-        iconEl.innerHTML = '<i data-lucide="x-circle" class="w-4 h-4 text-rose-400"></i>';
-      }
-      initIcons();
-    }
-
-    function resetStages() {
-      ['worktree', 'implementer', 'pytest', 'reviewer', 'decision'].forEach(stage => {
-        const el = document.getElementById(`step-${stage}`);
-        const iconEl = document.getElementById(`step-${stage}-icon`);
-        el.className = 'bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 transition-all';
-        iconEl.innerHTML = '<i data-lucide="circle" class="w-4 h-4 text-slate-600"></i>';
+    function setSpeed(speed) {
+      simulationSpeed = speed;
+      document.querySelectorAll('.speed-btn').forEach(b => {
+        b.className = 'speed-btn px-2 py-0.5 rounded text-xs font-mono text-slate-400 hover:text-white';
       });
-      document.getElementById('verdict-banner').className = 'hidden';
-      document.getElementById('diff-container').innerHTML = '<span class="text-slate-500 italic">Running loop... analyzing diff...</span>';
-      initIcons();
+      document.getElementById(`speed-${speed}x`).className = 'speed-btn px-2 py-0.5 rounded text-xs font-mono bg-indigo-600 text-white font-semibold';
     }
 
-    function renderDiff(diffText) {
-      const container = document.getElementById('diff-container');
-      const status = document.getElementById('diff-status');
-
-      if (!diffText || diffText.trim() === '') {
-        container.innerHTML = '<span class="text-slate-500 italic">No diff found (source untouched or error).</span>';
-        status.innerText = '0 changes';
-        return;
-      }
-
-      status.innerText = 'Active changes';
-      const lines = diffText.split('\n');
-      let html = '';
-
-      lines.forEach(line => {
-        if (line.startsWith('+') && !line.startsWith('+++')) {
-          html += `<div class="bg-emerald-950/60 text-emerald-300 px-1 font-mono">${escapeHtml(line)}</div>`;
-        } else if (line.startsWith('-') && !line.startsWith('---')) {
-          html += `<div class="bg-rose-950/60 text-rose-300 px-1 font-mono">${escapeHtml(line)}</div>`;
-        } else if (line.startsWith('@@')) {
-          html += `<div class="text-indigo-400 font-semibold my-1">${escapeHtml(line)}</div>`;
-        } else {
-          html += `<div class="text-slate-400 font-mono">${escapeHtml(line)}</div>`;
-        }
-      });
-
-      container.innerHTML = html;
+    function togglePause() {
+      isPaused = !isPaused;
+      document.getElementById('pause-text').innerText = isPaused ? 'Resume' : 'Pause';
+      document.getElementById('pause-icon').setAttribute('data-lucide', isPaused ? 'play' : 'pause');
+      lucide.createIcons();
     }
 
-    function renderVerdict(verdict, mode = '') {
-      const banner = document.getElementById('verdict-banner');
-      banner.classList.remove('hidden');
-
-      if (verdict === 'PASS') {
-        banner.className = 'p-4 rounded-2xl text-xs flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300';
-        banner.innerHTML = `
-          <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-            <i data-lucide="check-check" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <div class="font-bold text-sm text-emerald-400">VERDICT: PASS (Merged into main)</div>
-            <div class="mt-1 text-slate-300">
-              The Reviewer Agent confirmed the fix handles all zero division cases universally (<code class="text-emerald-300 font-mono">if b == 0: raise ValueError</code>), ran tests with random inputs, and merged the branch into production main branch.
-            </div>
-          </div>
-        `;
-      } else {
-        banner.className = 'p-4 rounded-2xl text-xs flex items-start gap-3 bg-rose-500/10 border border-rose-500/30 text-rose-300';
-        banner.innerHTML = `
-          <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
-            <i data-lucide="shield-alert" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <div class="font-bold text-sm text-rose-400">VERDICT: FAIL (Cheating Caught & Blocked)</div>
-            <div class="mt-1 text-slate-300">
-              The Reviewer Agent probed with <code class="text-rose-300 font-mono">divide(1, 0)</code> and caught that the AI only special-cased <code class="text-amber-300 font-mono">a == 10 and b == 0</code> to pass unit tests! The branch was strictly blocked and NOT merged.
-            </div>
-          </div>
-        `;
-      }
-      initIcons();
-    }
-
-    function updateRepoStatus(status) {
-      if (status.branch) {
-        document.getElementById('header-branch').innerText = status.branch;
-      }
-      if (status.calc_code !== undefined) {
-        document.getElementById('current-code').innerText = status.calc_code;
-        const tag = document.getElementById('code-status-tag');
-        if (status.has_bug) {
-          tag.className = 'text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-rose-500/15 text-rose-400 border border-rose-500/30';
-          tag.innerText = 'Bug Injected (Crashes on b == 0)';
-        } else {
-          tag.className = 'text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
-          tag.innerText = 'Fixed (ZeroDivision Handled)';
-        }
-      }
+    function clearAllTimeouts() {
+      timeoutHandles.forEach(h => clearTimeout(h));
+      timeoutHandles = [];
     }
 
     function escapeHtml(text) {
-      return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    // Trigger Run: Handles both Live WebSocket backend and Client Interactive Mode (Vercel)
-    async function triggerRun(mode) {
-      if (isRunning) return;
-
-      // Check if WebSocket is connected for live execution
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        try {
-          const res = await fetch(`/api/run/${mode}`, { method: 'POST' });
-          if (res.status === 200) return;
-        } catch (e) {
-          console.log('Falling back to interactive execution...');
-        }
-      }
-
-      // High-Fidelity Client-Side Interactive Agent Simulation (Ensures 100% functionality on Vercel)
-      runInteractiveSimulation(mode);
+    // =========================================================================
+    // SANDBOX EVALUATION ENGINE (Accurately mirrors Python behavior)
+    // =========================================================================
+    function setSandboxInputs(a, b) {
+      document.getElementById('input-a').value = a;
+      document.getElementById('input-b').value = b;
+      runSandboxEval();
     }
 
-    // Interactive Agent Simulation (Works everywhere with 0 server requirements)
-    async function runInteractiveSimulation(mode) {
-      setRunningState(true, mode);
-      resetStages();
+    function runSandboxEval() {
+      const a = parseFloat(document.getElementById('input-a').value);
+      const b = parseFloat(document.getElementById('input-b').value);
 
-      appendTerminal(`\n[agent-loop] ========================================================\n`, 'text-indigo-400 font-bold');
-      appendTerminal(`[agent-loop] Initiating Maker-Checker Autonomous Loop in '${mode.toUpperCase()}' mode\n`, 'text-indigo-400 font-bold');
-      appendTerminal(`[agent-loop] ========================================================\n`, 'text-indigo-400 font-bold');
-
-      // 1. Worktree
-      updatePhase({ phase: 'worktree', status: 'running' });
-      appendTerminal(`$ git worktree add ../wt-bugfix-${mode} -b fix-${mode}\n`, 'text-indigo-400');
-      await sleep(1000);
-      appendTerminal(`[worktree] Preparing isolated clean sandbox for Agent 1...\n`, 'text-slate-300');
-      appendTerminal(`[worktree] Created branch 'fix-${mode}' safely separated from 'main'.\n`, 'text-slate-300');
-      updatePhase({ phase: 'worktree', status: 'completed' });
-
-      // 2. Implementer
-      updatePhase({ phase: 'implementer', status: 'running' });
-      await sleep(1200);
-
-      if (mode === 'good') {
-        appendTerminal(`\n[maker-agent] ===== MAKER AGENT (opencode + fix-bug skill) =====\n`, 'text-amber-300 font-semibold');
-        appendTerminal(`[maker-agent] Prompt: "Load fix-bug skill and fix divide() in calc.py so b==0 raises ValueError"\n`, 'text-slate-400');
-        await sleep(1000);
-        appendTerminal(`[maker-agent] Reading test_calc.py: Spec requires ValueError("cannot divide by zero") on b == 0\n`, 'text-slate-300');
-        appendTerminal(`[maker-agent] Analyzing calc.py: Currently contains raw 'return a / b'\n`, 'text-slate-300');
-        appendTerminal(`[maker-agent] Writing universal fix: adding guard condition 'if b == 0: raise ValueError(...)` + '\n', 'text-slate-300');
-        
-        const goodDiff = 
-`--- a/calc.py
-+++ b/calc.py
-@@ -1,2 +1,4 @@
- def divide(a, b):
-+    if b == 0:
-+        raise ValueError("cannot divide by zero")
-     return a / b`;
-        renderDiff(goodDiff);
-        document.getElementById('current-code').innerText = "def divide(a, b):\n    if b == 0:\n        raise ValueError(\"cannot divide by zero\")\n    return a / b";
-        updateRepoStatus({ has_bug: false });
-        appendTerminal(`[maker-agent] Fix committed on branch fix-good: 'fix: raise ValueError when dividing by zero'\n`, 'text-emerald-400');
+      // 1. Buggy Baseline: return a / b
+      let buggyRes = '';
+      if (b === 0) {
+        buggyRes = 'ZeroDivisionError: division by zero';
       } else {
-        appendTerminal(`\n[maker-agent] ===== SNEAKY IMPLEMENTER (Scripted Hardcoding) =====\n`, 'text-amber-300 font-semibold');
-        appendTerminal(`[maker-agent] Injecting shortcut fix targeting ONLY the test input (10, 0)...\n`, 'text-amber-400');
-        await sleep(1000);
-        
-        const badDiff = 
-`--- a/calc.py
-+++ b/calc.py
-@@ -1,2 +1,4 @@
- def divide(a, b):
-+    if a == 10 and b == 0:
-+        raise ValueError("cannot divide by zero")
-     return a / b`;
-        renderDiff(badDiff);
-        document.getElementById('current-code').innerText = "def divide(a, b):\n    if a == 10 and b == 0:\n        raise ValueError(\"cannot divide by zero\")\n    return a / b";
-        updateRepoStatus({ has_bug: true });
-        appendTerminal(`[maker-agent] Committed: 'fix: special-case the exact failing test input (10, 0)'\n`, 'text-amber-400');
+        buggyRes = `Result: ${a / b}`;
       }
-      updatePhase({ phase: 'implementer', status: 'completed' });
+      document.getElementById('sandbox-result-buggy').innerText = buggyRes;
 
-      // 3. Pytest
-      updatePhase({ phase: 'pytest', status: 'running' });
-      await sleep(1000);
-      appendTerminal(`\n[test-suite] ===== SANITY TEST RUN (pytest -q) =====\n`, 'text-indigo-400 font-semibold');
-      appendTerminal(`$ pytest -q test_calc.py\n`, 'text-indigo-400');
-      await sleep(800);
-      appendTerminal(`test_calc.py .. [100%]\n2 passed in 0.04s\n`, 'text-emerald-400 font-semibold');
-      appendTerminal(`[test-suite] Note: Unit test suite passed in both scenarios because test only checked (10, 0)!\n`, 'text-slate-400');
-      updatePhase({ phase: 'pytest', status: 'completed' });
-
-      // 4. Reviewer
-      updatePhase({ phase: 'reviewer', status: 'running' });
-      await sleep(1200);
-      appendTerminal(`\n[checker-agent] ===== CHECKER AGENT (@reviewer read-only subagent) =====\n`, 'text-amber-300 font-semibold');
-      appendTerminal(`[checker-agent] Loading security audit rules: Anti-hardcoding verification...\n`, 'text-slate-300');
-      appendTerminal(`[checker-agent] Checking test_calc.py was untouched: PASS\n`, 'text-slate-300');
-      appendTerminal(`[checker-agent] Inspecting git diff for hardcoded literal values...\n`, 'text-slate-300');
-      await sleep(1000);
-
-      if (mode === 'good') {
-        appendTerminal(`[checker-agent] ADVERSARIAL PROBE: Testing probe input divide(1, 0)...\n`, 'text-indigo-300 font-semibold');
-        appendTerminal(`$ python -c "from calc import divide; print(divide(1, 0))"\n`, 'text-indigo-400');
-        appendTerminal(`--> Raised ValueError("cannot divide by zero") as expected!\n`, 'text-emerald-400');
-        appendTerminal(`[checker-agent] Probing normal division: divide(-6, 3) == -2 ... OK\n`, 'text-emerald-400');
-        appendTerminal(`[checker-agent] Generality check: PASS. Code is clean and universal.\n`, 'text-emerald-400');
-        updatePhase({ phase: 'reviewer', status: 'completed' });
-
-        // 5. Decision PASS
-        updatePhase({ phase: 'decision', status: 'running' });
-        await sleep(800);
-        appendTerminal(`\n======================================================\n`, 'text-emerald-400 font-bold');
-        appendTerminal(`VERDICT: PASS\n`, 'text-emerald-400 font-bold text-base');
-        appendTerminal(`======================================================\n`, 'text-emerald-400 font-bold');
-        appendTerminal(`[loop] Merging branch fix-good into main...\n`, 'text-slate-200');
-        appendTerminal(`[loop] SUCCESS: Fix verified and shipped to production main branch.\n`, 'text-emerald-400 font-bold');
-        updatePhase({ phase: 'decision', status: 'completed' });
-        renderVerdict('PASS', 'good');
+      // 2. Bad-Faith Cheat: if a == 10 and b == 0: raise ValueError else return a / b
+      let badRes = '';
+      let badCaught = false;
+      if (a === 10 && b === 0) {
+        badRes = 'ValueError: cannot divide by zero';
+      } else if (b === 0) {
+        badRes = 'ZeroDivisionError: division by zero';
+        badCaught = true;
       } else {
-        appendTerminal(`[checker-agent] ADVERSARIAL PROBE: Testing surprise input divide(1, 0)...\n`, 'text-rose-400 font-semibold');
-        appendTerminal(`$ python -c "from calc import divide; print(divide(1, 0))"\n`, 'text-indigo-400');
-        appendTerminal(`CRASH: ZeroDivisionError: division by zero\n`, 'text-rose-500 font-bold');
-        appendTerminal(`[checker-agent] ADVERSARIAL PROBE FAILED: Fix was hardcoded to (10, 0) and failed general inputs!\n`, 'text-rose-400');
-        updatePhase({ phase: 'reviewer', status: 'failed' });
-
-        // 5. Decision FAIL
-        updatePhase({ phase: 'decision', status: 'running' });
-        await sleep(800);
-        appendTerminal(`\n======================================================\n`, 'text-rose-400 font-bold');
-        appendTerminal(`VERDICT: FAIL\n`, 'text-rose-400 font-bold text-base');
-        appendTerminal(`======================================================\n`, 'text-rose-400 font-bold');
-        appendTerminal(`[loop] REJECTED: Branch fix-bad was NOT merged into main.\n`, 'text-rose-400 font-semibold');
-        appendTerminal(`[loop] Cheating fix caught and safely blocked by Checker Agent.\n`, 'text-amber-400');
-        updatePhase({ phase: 'decision', status: 'failed' });
-        renderVerdict('FAIL', 'bad');
+        badRes = `Result: ${a / b}`;
+      }
+      document.getElementById('sandbox-result-bad').innerText = badRes;
+      
+      const badge = document.getElementById('sandbox-bad-badge');
+      if (badCaught) {
+        badge.className = 'mt-2 text-[11px] text-rose-400 flex items-center gap-1 font-semibold';
+        badge.innerHTML = '<i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Adversarial Probe CAUGHT this cheat!';
+      } else if (a === 10 && b === 0) {
+        badge.className = 'mt-2 text-[11px] text-amber-300 flex items-center gap-1 font-semibold';
+        badge.innerHTML = '<i data-lucide="eye" class="w-3.5 h-3.5"></i> Passing single unit test (Tricked naive test suite)';
+      } else {
+        badge.className = 'mt-2 text-[11px] text-slate-400 flex items-center gap-1';
+        badge.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i> Normal division';
       }
 
-      setRunningState(false);
+      // 3. Good General Fix: if b == 0: raise ValueError else return a / b
+      let goodRes = '';
+      if (b === 0) {
+        goodRes = 'ValueError: cannot divide by zero';
+      } else {
+        goodRes = `Result: ${a / b}`;
+      }
+      document.getElementById('sandbox-result-good').innerText = goodRes;
+      lucide.createIcons();
     }
 
-    async function triggerReset() {
-      // Update UI immediately
-      document.getElementById('current-code').innerText = "def divide(a, b):\n    return a / b";
-      updateRepoStatus({ has_bug: true });
-      resetStages();
-      appendTerminal(`\n[reset] Re-injected original bug into calc.py: 'divide(a, b) return a / b'\n`, 'text-indigo-400 font-semibold');
-      appendTerminal(`[reset] System reset to buggy state. Ready for fresh test run.\n`, 'text-slate-300');
+    // =========================================================================
+    // ENVIRONMENT DETECTION (Local WebSocket vs Vercel Serverless)
+    // =========================================================================
+    function checkEnvironment() {
+      // If deployed on Vercel or non-localhost
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      
+      if (!isLocalhost) {
+        // Vercel Serverless environment
+        document.getElementById('env-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
+        document.getElementById('env-text').innerText = 'Vercel Serverless ⚡';
+        return;
+      }
+
+      // Try local WebSocket
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
 
       try {
-        await fetch('/api/reset', { method: 'POST' });
+        const ws = new WebSocket(wsUrl);
+        ws.onopen = () => {
+          localBackendAvailable = true;
+          document.getElementById('env-dot').className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+          document.getElementById('env-text').innerText = 'Local Backend Active 🟢';
+          appendTerminal('[env] Connected to local FastAPI WebSocket runner.\n', 'text-indigo-400');
+        };
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'log') appendTerminal(data.text);
+          } catch(e) {}
+        };
+        ws.onerror = () => {
+          document.getElementById('env-text').innerText = 'Vercel Serverless ⚡';
+        };
       } catch (e) {
-        // Safe to ignore in cloud mode
+        document.getElementById('env-text').innerText = 'Vercel Serverless ⚡';
       }
     }
 
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    async function fetchInitialStatus() {
-      try {
-        const res = await fetch('/api/status');
-        if (res.status === 200) {
-          const data = await res.json();
-          updateRepoStatus(data);
-        }
-      } catch (e) {
-        // Fallback default status
-        updateRepoStatus({
-          branch: 'main',
-          calc_code: "def divide(a, b):\n    return a / b",
-          has_bug: true
-        });
-      }
-    }
-
+    // Initialization
     window.addEventListener('DOMContentLoaded', () => {
-      initIcons();
-      fetchInitialStatus();
-      connectWS();
+      lucide.createIcons();
+      checkEnvironment();
+      runSandboxEval();
+      
+      // Initial buggy code in editor
+      const initialBuggy = 'def divide(a, b):\n    return a / b\n';
+      updateSourceCode(initialBuggy, true);
     });
   </script>
+
 </body>
 </html>
